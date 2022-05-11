@@ -21,7 +21,7 @@ spec:
         - name: api
           image: "{{ .Values.image }}"
           ports:
-            - containerPort: 8080
+            - containerPort: 8000
               name: http
           envFrom:
             - secretRef:
