@@ -46,6 +46,7 @@ state = State(
 
 config = Config.from_env()
 app = FastAPI()
+from fastapi.responses import RedirectResponse
 
 app.add_middleware(
     CORSMiddleware,
@@ -57,6 +58,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/", response_class=RedirectResponse)
+async def redirect_to_docs():
+    return RedirectResponse("/docs")
 
 
 @app.get("/state")
