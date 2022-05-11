@@ -73,7 +73,7 @@ async def get_state(token: str = Depends(auth_token)) -> State:
     return state
 
 
-@app.post("/spin", response_class=Response)
+@app.post("/spin", response_class=Response, status_code=204)
 async def spin():
     if state.is_locked:
         raise HTTPException(HTTPStatus.CONFLICT)
@@ -81,7 +81,7 @@ async def spin():
     state.current_drink = random.randrange(0, len(state.drinks))
 
 
-@app.put("/unlock", response_class=Response)
+@app.put("/unlock", response_class=Response, status_code=204)
 async def unlock(token: str = Depends(auth_token)):
     if token != config.wheel_token:
         raise HTTPException(HTTPStatus.FORBIDDEN)
