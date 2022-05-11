@@ -28,7 +28,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Substitute environment variables in values.yaml
         env:
-          IMAGE_NAME: ghcr.io/preparingforexams/wheel-of-misfortune-backend:${GITHUB_SHA}
           WHEEL_TOKEN: ${{ secrets.MISFORTUNE_WHEEL_TOKEN }}
         run: "envsubst < values.yaml > values_sub.yaml && mv values_sub.yaml values.yaml"
       - uses: WyriHaximus/github-action-helm3@v2

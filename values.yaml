@@ -1,3 +1,3 @@
-image: ${IMAGE_NAME}
+image: ghcr.io/preparingforexams/wheel-of-misfortune-backend:${GITHUB_SHA}
 secret:
   wheelToken: ${WHEEL_TOKEN}
