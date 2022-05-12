@@ -10,7 +10,7 @@ from fastapi import FastAPI, Depends
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from fastapi.security import HTTPBearer
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 
 auth_token = HTTPBearer()
@@ -67,8 +67,8 @@ async def redirect_to_docs():
 
 
 @app.get("/state")
-async def get_state(token: str = Depends(auth_token)) -> State:
-    if token != f"Bearer {config.wheel_token}":
+async def get_state(token: HTTPAuthorizationCredentials = Depends(auth_token)) -> State:
+    if token.credentials != config.wheel_token:
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
     return state
@@ -83,8 +83,8 @@ async def spin():
 
 
 @app.put("/unlock", response_class=Response, status_code=204)
-async def unlock(token: str = Depends(auth_token)):
-    if token != f"Bearer {config.wheel_token}":
+async def unlock(token: HTTPAuthorizationCredentials = Depends(auth_token)):
+    if token.credentials != config.wheel_token:
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
     state.is_locked = False
