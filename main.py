@@ -10,10 +10,10 @@ from fastapi import FastAPI, Depends
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from fastapi.security import APIKeyHeader
+from fastapi.security import HTTPBearer
 from pydantic import BaseModel
 
-auth_token = APIKeyHeader(name="Authorization")
+auth_token = HTTPBearer()
 
 
 @dataclass
