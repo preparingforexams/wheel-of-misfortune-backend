@@ -54,6 +54,7 @@ app.add_middleware(
         "https://bembel.party",
         "https://wheel.bembel.party",
         "http://localhost",
+        "http://localhost:8080",
     ], allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
