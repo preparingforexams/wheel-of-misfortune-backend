@@ -68,7 +68,7 @@ async def redirect_to_docs():
 
 @app.get("/state")
 async def get_state(token: str = Depends(auth_token)) -> State:
-    if token != config.wheel_token:
+    if token != f"Bearer {config.wheel_token}":
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
     return state
@@ -84,7 +84,7 @@ async def spin():
 
 @app.put("/unlock", response_class=Response, status_code=204)
 async def unlock(token: str = Depends(auth_token)):
-    if token != config.wheel_token:
+    if token != f"Bearer {config.wheel_token}":
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
     state.is_locked = False
