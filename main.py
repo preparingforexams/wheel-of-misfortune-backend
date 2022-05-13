@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import random
+import secrets
 from dataclasses import dataclass
 from http import HTTPStatus
 from typing import List
@@ -9,6 +10,7 @@ from typing import List
 from fastapi import FastAPI, Depends
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 from fastapi.responses import Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
@@ -33,8 +35,14 @@ class Drink(BaseModel):
 
 class State(BaseModel):
     drinks: List[Drink]
+    code: str
     is_locked = False
     current_drink: int = 0
+    speed: float = 0.0
+
+
+def generate_code() -> str:
+    return secrets.token_urlsafe(32)
 
 
 state = State(
@@ -48,11 +56,11 @@ state = State(
         Drink(name="Schachtwasser"),
         Drink(name="Fichtenfeuer"),
     ],
+    code=generate_code(),
 )
 
 config = Config.from_env()
 app = FastAPI()
-from fastapi.responses import RedirectResponse
 
 app.add_middleware(
     CORSMiddleware,
@@ -81,10 +89,14 @@ async def get_state(token: HTTPAuthorizationCredentials = Depends(auth_token)) -
 
 
 @app.post("/spin", response_class=Response, status_code=204)
-async def spin():
+async def spin(speed: float, token: HTTPAuthorizationCredentials = Depends(auth_token)):
+    if token.credentials != state.code:
+        raise HTTPException(HTTPStatus.FORBIDDEN)
+
     if state.is_locked:
         raise HTTPException(HTTPStatus.CONFLICT)
     state.is_locked = True
+    state.speed = speed
     state.current_drink = random.randrange(0, len(state.drinks))
 
 
@@ -94,3 +106,4 @@ async def unlock(token: HTTPAuthorizationCredentials = Depends(auth_token)):
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
     state.is_locked = False
+    state.code = generate_code()
