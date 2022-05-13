@@ -45,16 +45,24 @@ def generate_code() -> str:
     return secrets.token_urlsafe(16)
 
 
+drink_names = [
+    "Würgengel",
+    "Fichtenfeuer",
+    "Einen Schnaps von der Marille",
+    "Schachtwasser",
+    "Stolperknabe",
+    "Butzelmann",
+    "Bierlikör",
+    "Anreischke",
+    "Föhrer Mannhatten",
+    "Bibergeil",
+    "Erich's Rache",
+]
+
+
 state = State(
     drinks=[
-        Drink(name="Korn"),
-        Drink(name="Bier"),
-        Drink(name="Stolperknabe"),
-        Drink(name="Würgengel"),
-        Drink(name="Marillenschnaps"),
-        Drink(name="Feigling"),
-        Drink(name="Schachtwasser"),
-        Drink(name="Fichtenfeuer"),
+        Drink(name=name) for name in drink_names
     ],
     code=generate_code(),
 )
