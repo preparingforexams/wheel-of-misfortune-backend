@@ -42,7 +42,7 @@ class State(BaseModel):
 
 
 def generate_code() -> str:
-    return secrets.token_urlsafe(32)
+    return secrets.token_urlsafe(16)
 
 
 state = State(
