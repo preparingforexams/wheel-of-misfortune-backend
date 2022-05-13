@@ -64,7 +64,6 @@ drink_names = [
     "Absinth",
     "Tequila",
     "Bärwurz",
-    "Kümmelschnaps",
     "Ouzo",
 ]
 
