@@ -54,7 +54,7 @@ drink_names = [
     "Butzelmann",
     "Bierlikör",
     "Anreischke",
-    "Föhrer Mannhatten",
+    "Föhrer Manhattan",
     "Bibergeil",
     "Erich's Rache",
 ]
