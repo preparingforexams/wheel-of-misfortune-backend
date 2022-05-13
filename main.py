@@ -41,6 +41,11 @@ state = State(
     drinks=[
         Drink(name="Korn"),
         Drink(name="Bier"),
+        Drink(name="Bowle"),
+        Drink(name="Stolperknabe"),
+        Drink(name="Würgengel"),
+        Drink(name="Marillenschnaps"),
+        Drink(name="Feigling"),
     ],
 )
 
