@@ -58,7 +58,6 @@ drink_names = [
     "Bibergeil",
     "Erich's Rache",
     "Marillenschnaps",
-    "Kirschlikör",
     "Limoncello",
     "Moselfeuer",
     "Alter Heidejäger",
