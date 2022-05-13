@@ -48,7 +48,7 @@ def generate_code() -> str:
 drink_names = [
     "Würgengel",
     "Fichtenfeuer",
-    "Einen Schnaps von der Marille",
+    "Schnaps von der Marille",
     "Schachtwasser",
     "Stolperknabe",
     "Butzelmann",
