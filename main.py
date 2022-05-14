@@ -57,13 +57,17 @@ drink_names = [
     "Föhrer Manhattan",
     "Bibergeil",
     "Erich's Rache",
-    "Marillenschnaps",
+    "Adler-Tropfen",
     "Limoncello",
     "Moselfeuer",
     "Alter Heidejäger",
     "Absinth",
     "Tequila",
     "Bärwurz",
+    "Gude Nacht",
+    "Batida de Coco",
+    "Bacardi Razz",
+    "Berentzen Waldfrucht",
     "Ouzo",
 ]
 
