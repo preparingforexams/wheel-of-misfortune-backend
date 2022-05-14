@@ -61,6 +61,7 @@ drink_names = [
     "Limoncello",
     "Moselfeuer",
     "Alter Heidejäger",
+    "Burgenkümmel",
     "Absinth",
     "Tequila",
     "Bärwurz",
