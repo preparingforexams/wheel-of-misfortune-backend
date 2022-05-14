@@ -70,6 +70,9 @@ drink_names = [
     "Bacardi Razz",
     "Berentzen Waldfrucht",
     "Ouzo",
+    "Orange",
+    "Quitte",
+    "Pfeffi",
 ]
 
 
