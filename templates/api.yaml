@@ -27,6 +27,13 @@ spec:
       containers:
         - name: api
           image: "{{ .Values.image }}"
+          command:
+            - poetry
+            - run
+            - uvicorn
+            - misfortune.api:app
+            - --host
+            - 0.0.0.0
           ports:
             - containerPort: 8000
               name: http
