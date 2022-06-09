@@ -62,6 +62,7 @@ state = State(
 )
 
 config = Config.from_env()
+config.basic_setup()
 app = FastAPI()
 
 app.add_middleware(

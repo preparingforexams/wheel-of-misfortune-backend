@@ -3,5 +3,6 @@ serviceAccount:
   json: ${GCP_SERVICE_ACCOUNT_JSON}
 secret:
   internalToken: ${INTERNAL_API_KEY}
+  sentryDsn: ${SENTRY_DSN}
   telegramToken: ${TELEGRAM_API_TOKEN}
   wheelToken: ${WHEEL_TOKEN}

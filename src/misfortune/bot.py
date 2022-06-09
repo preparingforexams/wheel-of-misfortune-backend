@@ -117,12 +117,12 @@ class MisfortuneBot:
             params={
                 "name": text,
             },
-        )
+        ).raise_for_status()
 
 
 def run():
-    logging.basicConfig()
     config = Config.from_env()
+    config.basic_setup()
     updater = Updater(config.telegram_token)
     bot = MisfortuneBot(updater.bot, config)
     dispatcher = updater.dispatcher
