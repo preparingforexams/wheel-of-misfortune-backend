@@ -11,6 +11,7 @@ uvicorn = "^0.17.6"
 pydantic = "^1.9.0"
 google-cloud-firestore = "^2.5.2"
 pendulum = "^2.1.2"
+python-telegram-bot = "^13.12"
 
 [tool.poetry.dev-dependencies]
 
