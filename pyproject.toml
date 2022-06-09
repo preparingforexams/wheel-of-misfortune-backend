@@ -12,6 +12,8 @@ pydantic = "^1.9.0"
 google-cloud-firestore = "^2.5.2"
 pendulum = "^2.1.2"
 python-telegram-bot = "^13.12"
+requests = "^2.28.0"
+more-itertools = "^8.13.0"
 
 [tool.poetry.dev-dependencies]
 

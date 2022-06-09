@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import random
 import secrets
-from asyncio import Lock
 from datetime import datetime, timedelta
 from http import HTTPStatus
 from typing import List, Optional
@@ -45,8 +44,20 @@ def generate_code() -> str:
     return secrets.token_urlsafe(16)
 
 
+_client = firestore.Client()
+
+
+def fetch_drinks() -> List[Drink]:
+    drinks = []
+    for doc in _client.collection("drinks").stream():
+        drink = Drink.from_dict(doc.to_dict())
+        drinks.append(drink)
+
+    return drinks
+
+
 state = State(
-    drinks=[],
+    drinks=fetch_drinks(),
     code=generate_code(),
 )
 
@@ -71,30 +82,13 @@ async def redirect_to_docs():
     return RedirectResponse("/docs")
 
 
-async def refresh_drinks():
-    client = firestore.Client()
-    drinks = []
-    for doc in client.collection("drinks").stream():
-        drink = Drink.from_doc(doc.to_dict())
-        drinks.append(drink)
-
-    state.drinks = drinks
-    state.drinking_age = pendulum.now()
-
-
-lock = Lock()
-
-
 @app.get("/state")
 async def get_state(token: HTTPAuthorizationCredentials = Depends(auth_token)) -> State:
-    if token.credentials != config.wheel_token:
+    if token.credentials not in [
+        config.internal_token,
+        config.wheel_token,
+    ]:
         raise HTTPException(HTTPStatus.FORBIDDEN)
-
-    if state.is_old():
-        if not lock.locked():
-            async with lock:
-                if not state.is_old():
-                    await refresh_drinks()
 
     return state
 
@@ -118,3 +112,23 @@ async def unlock(token: HTTPAuthorizationCredentials = Depends(auth_token)):
 
     state.is_locked = False
     state.code = generate_code()
+
+
+@app.post("/drink", response_class=Response, status_code=201)
+async def add_drink(name: str, token: HTTPAuthorizationCredentials = Depends(auth_token)):
+    if token.credentials != config.internal_token:
+        raise HTTPException(HTTPStatus.FORBIDDEN)
+
+    if name not in (d.name for d in state.drinks):
+        drink = Drink.create(name)
+        _client.collection("drinks").document(drink.id).set(drink.to_dict())
+        state.drinks.append(drink)
+
+
+@app.delete("/drink", response_class=Response, status_code=201)
+async def delete_drink(drink_id: str, token: HTTPAuthorizationCredentials = Depends(auth_token)):
+    if token.credentials != config.internal_token:
+        raise HTTPException(HTTPStatus.FORBIDDEN)
+
+    _client.collection("drinks").document(drink_id).delete()
+    state.drinks = [d for d in state.drinks if d.id != drink_id]
