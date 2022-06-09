@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import os
 import random
 import secrets
 from asyncio import Lock
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from http import HTTPStatus
 from typing import List, Optional
@@ -19,28 +17,10 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from google.cloud import firestore
 from pydantic import BaseModel
 
+from .config import Config
+from .drink import Drink
+
 auth_token = HTTPBearer()
-
-
-@dataclass
-class Config:
-    wheel_token: str
-
-    @classmethod
-    def from_env(cls) -> Config:
-        return cls(
-            wheel_token=os.getenv("WHEEL_TOKEN"),
-        )
-
-
-class Drink(BaseModel):
-    name: str
-
-    @classmethod
-    def from_doc(cls, doc: dict) -> Drink:
-        return Drink(
-            name=doc["name"],
-        )
 
 
 class State(BaseModel):
