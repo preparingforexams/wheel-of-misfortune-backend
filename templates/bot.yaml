@@ -25,8 +25,8 @@ spec:
         - name: bot
           image: "{{ .Values.image }}"
           command:
-            - poetry
-            - run
+            - python
+            - -m
             - misfortune.bot
           env:
             - name: API_URL
