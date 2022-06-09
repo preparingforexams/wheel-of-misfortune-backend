@@ -3,16 +3,20 @@ from __future__ import annotations
 import os
 import random
 import secrets
+from asyncio import Lock
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from http import HTTPStatus
-from typing import List
+from typing import List, Optional
 
+import pendulum
 from fastapi import FastAPI, Depends
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.responses import Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from google.cloud import firestore
 from pydantic import BaseModel
 
 auth_token = HTTPBearer()
@@ -32,53 +36,37 @@ class Config:
 class Drink(BaseModel):
     name: str
 
+    @classmethod
+    def from_doc(cls, doc: dict) -> Drink:
+        return Drink(
+            name=doc["name"],
+        )
+
 
 class State(BaseModel):
     drinks: List[Drink]
     code: str
+    drinking_age: Optional[datetime] = None
     is_locked = False
     current_drink: int = 0
     speed: float = 0.0
+
+    def is_old(self) -> bool:
+        drinking_age = self.drinking_age
+        if drinking_age is None:
+            return True
+
+        now = pendulum.now()
+        delta = now - drinking_age
+        return delta > timedelta(minutes=1)
 
 
 def generate_code() -> str:
     return secrets.token_urlsafe(16)
 
 
-drink_names = [
-    "Würgengel",
-    "Fichtenfeuer",
-    "Schnaps von der Marille",
-    "Schachtwasser",
-    "Stolperknabe",
-    "Butzelmann",
-    "Bierlikör",
-    "Anreischke",
-    "Föhrer Manhattan",
-    "Bibergeil",
-    "Erich's Rache",
-    "Adler-Tropfen",
-    "Limoncello",
-    "Moselfeuer",
-    "Alter Heidejäger",
-    "Burgenkümmel",
-    "Absinth",
-    "Tequila",
-    "Bärwurz",
-    "Gude Nacht",
-    "Batida de Coco",
-    "Bacardi Razz",
-    "Berentzen Waldfrucht",
-    "Ouzo",
-    "Quitte",
-    "Pfeffi",
-]
-
-
 state = State(
-    drinks=[
-        Drink(name=name) for name in drink_names
-    ],
+    drinks=[],
     code=generate_code(),
 )
 
@@ -103,10 +91,30 @@ async def redirect_to_docs():
     return RedirectResponse("/docs")
 
 
+async def refresh_drinks():
+    client = firestore.Client()
+    drinks = []
+    for doc in client.collection("drinks").stream():
+        drink = Drink.from_doc(doc.to_dict())
+        drinks.append(drink)
+
+    state.drinks = drinks
+    state.drinking_age = pendulum.now()
+
+
+lock = Lock()
+
+
 @app.get("/state")
 async def get_state(token: HTTPAuthorizationCredentials = Depends(auth_token)) -> State:
     if token.credentials != config.wheel_token:
         raise HTTPException(HTTPStatus.FORBIDDEN)
+
+    if state.is_old():
+        if not lock.locked():
+            with lock:
+                if not state.is_locked:
+                    await refresh_drinks()
 
     return state
 
