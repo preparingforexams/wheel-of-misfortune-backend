@@ -141,7 +141,7 @@ def run():
     dispatcher.add_handler(MessageHandler(Filters.text, bot.on_message))
 
     updater.start_polling()
-    print("Running")
+    _LOG.info("Running")
     updater.idle()
 
 
