@@ -17,12 +17,24 @@ spec:
       labels:
         app: api
     spec:
+      volumes:
+        - name: gcp
+          secret:
+            items:
+              - key: SERVICE_ACCOUNT_JSON
+                path: sa.json
+            secretName: gcp
       containers:
         - name: api
           image: "{{ .Values.image }}"
           ports:
             - containerPort: 8000
               name: http
+          volumeMounts:
+            - mountPath: /secret
+              name: gcp
           envFrom:
+            - secretRef:
+                name: gcp
             - secretRef:
                 name: tokens
