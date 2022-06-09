@@ -113,7 +113,7 @@ async def get_state(token: HTTPAuthorizationCredentials = Depends(auth_token)) -
     if state.is_old():
         if not lock.locked():
             async with lock:
-                if not state.is_locked:
+                if not state.is_old():
                     await refresh_drinks()
 
     return state
