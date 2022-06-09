@@ -1,4 +1,7 @@
-from typing import List
+from __future__ import annotations
+
+import logging
+from typing import List, Optional
 
 import requests
 from more_itertools import chunked
@@ -8,9 +11,24 @@ from telegram.ext import Updater, CommandHandler, Filters, CallbackQueryHandler,
 from misfortune.config import Config
 from misfortune.drink import Drink
 
+_LOG = logging.getLogger("misfortune.bot")
+
+
+def handler(func):
+    def wrapper(self: MisfortuneBot, update: Update, _):
+        user = update.effective_user
+        if user is not None:
+            if user.id not in self.allowed_users:
+                _LOG.debug(f"Filtered request from user {user.id}")
+                return
+        func(self, update)
+
+    return wrapper
+
 
 class MisfortuneBot:
     def __init__(self, bot: Bot, config: Config):
+        self.allowed_users = [133399998, 1603772877]
         self.telegram = bot
         self.api_url = config.api_url
         self.api_token = config.internal_token
@@ -20,27 +38,33 @@ class MisfortuneBot:
             "Authorization": f"Bearer {self.api_token}"
         }
 
-    def start(self, update: Update, _):
+    @handler
+    def start(self, update: Update):
         self.telegram.send_message(
             update.effective_user.id,
             "Jede Nachricht, die du mir schickst, wird als Getränk auf dem Unglücksrad erscheinen.",
         )
 
-    def list_drinks(self, update: Update, _):
+    @handler
+    def list_drinks(self, update: Update):
         markup = self._build_drinks_markup()
-        self.telegram.send_message(
-            update.effective_user.id,
-            "Drücke auf die Getränke, die du löschen willst:",
-            reply_markup=markup,
-        )
+        if not markup:
+            update.effective_user.send_message("Es stehen aktuell keine Getränke auf dem Rad.")
+        else:
+            update.effective_user.send_message(
+                "Drücke auf die Getränke, die du löschen willst:",
+                reply_markup=markup,
+            )
 
-    def _build_drinks_markup(self) -> InlineKeyboardMarkup:
+    def _build_drinks_markup(self) -> Optional[InlineKeyboardMarkup]:
         response = requests.get(
             f"{self.api_url}/state",
             headers=self._headers(),
         )
         response.raise_for_status()
         drinks = [Drink.from_dict(d) for d in response.json()["drinks"]]
+        if not drinks:
+            return None
         return InlineKeyboardMarkup(self._build_buttons(drinks))
 
     @staticmethod
@@ -55,7 +79,8 @@ class MisfortuneBot:
             n=2,
         ))
 
-    def on_callback(self, update: Update, _):
+    @handler
+    def on_callback(self, update: Update):
         drink_id = update.callback_query.data
         update.callback_query.answer()
         response = requests.delete(
@@ -66,13 +91,37 @@ class MisfortuneBot:
             }
         )
         response.raise_for_status()
-        update.callback_query.message.edit_reply_markup(self._build_drinks_markup())
+        markup = self._build_drinks_markup()
+        if markup:
+            update.callback_query.message.edit_reply_markup(markup)
+        else:
+            update.callback_query.message.edit_text(
+                text="Alle Getränke wurden gelöscht.",
+                reply_markup=None,
+            )
 
-    def on_message(self, update: Update, _):
-        pass
+    @handler
+    def on_message(self, update: Update):
+        text = update.message.text
+        if len(text) > 32:
+            update.message.reply_text(
+                f"Sorry, nur Getränkenamen mit bis zu 32 Zeichen werden akzeptiert"
+                f" (deine Nachricht hatte {len(text)} Zeichen)",
+                reply_to_message_id=update.message.message_id,
+            )
+            return
+
+        requests.post(
+            f"{self.api_url}/drink",
+            headers=self._headers(),
+            params={
+                "name": text,
+            },
+        )
 
 
 def run():
+    logging.basicConfig()
     config = Config.from_env()
     updater = Updater(config.telegram_token)
     bot = MisfortuneBot(updater.bot, config)
