@@ -103,9 +103,10 @@ class MisfortuneBot:
     @handler
     def on_message(self, update: Update):
         text = update.message.text
-        if len(text) > 32:
+        limit = 16
+        if len(text) > limit:
             update.message.reply_text(
-                f"Sorry, nur Getränkenamen mit bis zu 32 Zeichen werden akzeptiert"
+                f"Sorry, nur Getränkenamen mit bis zu {limit} Zeichen werden akzeptiert"
                 f" (deine Nachricht hatte {len(text)} Zeichen)",
                 reply_to_message_id=update.message.message_id,
             )
