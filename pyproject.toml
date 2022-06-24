@@ -7,7 +7,7 @@ authors = ["Björn Petersen <git@bjoernpetersen.net>"]
 [tool.poetry.dependencies]
 python = "~3.10"
 fastapi = "^0.78.0"
-uvicorn = "^0.17.6"
+uvicorn = "^0.18.0"
 pydantic = "^1.9.0"
 google-cloud-firestore = "^2.5.2"
 pendulum = "^2.1.2"
