@@ -534,10 +534,7 @@ certifi = []
 charset-normalizer = []
 click = []
 colorama = []
-fastapi = [
-    {file = "fastapi-0.78.0-py3-none-any.whl", hash = "sha256:15fcabd5c78c266fa7ae7d8de9b384bfc2375ee0503463a6febbe3bab69d6f65"},
-    {file = "fastapi-0.78.0.tar.gz", hash = "sha256:3233d4a789ba018578658e2af1a4bb5e38bdd122ff722b313666a9b2c6786a83"},
-]
+fastapi = []
 google-api-core = []
 google-auth = []
 google-cloud-core = [
@@ -548,10 +545,7 @@ google-cloud-firestore = []
 googleapis-common-protos = []
 grpcio = []
 grpcio-status = []
-h11 = [
-    {file = "h11-0.13.0-py3-none-any.whl", hash = "sha256:8ddd78563b633ca55346c8cd41ec0af27d3c79931828beffb46ce70a379e7442"},
-    {file = "h11-0.13.0.tar.gz", hash = "sha256:70813c1135087a248a4d38cc0e1a0181ffab2188141a93eaf567940c3957ff06"},
-]
+h11 = []
 idna = []
 more-itertools = []
 pendulum = []
