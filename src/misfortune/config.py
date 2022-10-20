@@ -10,7 +10,8 @@ import sentry_sdk
 
 def _non_probe_sampler(context: dict[str, Any]) -> float:
     transaction = context["transaction_context"]
-    if transaction["op"] == "http.server" and transaction.get("path").startswith("/probe/"):
+    path = transaction.get("path")
+    if transaction["op"] == "http.server" and path is not None and path.startswith("/probe/"):
         return 0.0
 
     return 1.0
