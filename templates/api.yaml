@@ -45,3 +45,7 @@ spec:
                 name: gcp
             - secretRef:
                 name: tokens
+          livenessProbe:
+            httpGet:
+              port: http
+              path: /probe/live

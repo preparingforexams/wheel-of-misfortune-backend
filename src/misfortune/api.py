@@ -83,6 +83,11 @@ async def redirect_to_docs():
     return RedirectResponse("/docs")
 
 
+@app.get("/probe/live")
+async def liveness_probe():
+    return {"status": "ok"}
+
+
 @app.get("/state")
 async def get_state(token: HTTPAuthorizationCredentials = Depends(auth_token)) -> State:
     if token.credentials not in [
