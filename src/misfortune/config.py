@@ -3,9 +3,17 @@ from __future__ import annotations
 import logging
 import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Any
 
 import sentry_sdk
+
+
+def _non_probe_sampler(context: dict[str, Any]) -> float:
+    transaction = context["transaction_context"]
+    if transaction["op"] == "http.server" and transaction.get("path").startswith("/probe/"):
+        return 0.0
+
+    return 1.0
 
 
 @dataclass
@@ -31,4 +39,7 @@ class Config:
         logging.getLogger("misfortune").setLevel(logging.DEBUG)
         dsn = self.sentry_dsn
         if dsn:
-            sentry_sdk.init(dsn=dsn)
+            sentry_sdk.init(
+                dsn=dsn,
+                traces_sampler=_non_probe_sampler,
+            )
