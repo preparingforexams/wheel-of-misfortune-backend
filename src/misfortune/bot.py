@@ -28,7 +28,7 @@ def handler(func):
 
 class MisfortuneBot:
     def __init__(self, bot: Bot, config: Config):
-        self.allowed_users = [133399998, 1603772877]
+        self.allowed_users = [133399998, 1603772877, 444493856]
         self.telegram = bot
         self.api_url = config.api_url
         self.api_token = config.internal_token
