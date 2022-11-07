@@ -90,7 +90,7 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7
 
 [[package]]
 name = "fastapi"
-version = "0.85.2"
+version = "0.86.0"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
 category = "main"
 optional = false
@@ -104,7 +104,7 @@ starlette = "0.20.4"
 all = ["email-validator (>=1.1.1,<2.0.0)", "itsdangerous (>=1.1.0,<3.0.0)", "jinja2 (>=2.11.2,<4.0.0)", "orjson (>=3.2.1,<4.0.0)", "python-multipart (>=0.0.5,<0.0.6)", "pyyaml (>=5.3.1,<7.0.0)", "requests (>=2.24.0,<3.0.0)", "ujson (>=4.0.1,!=4.0.2,!=4.1.0,!=4.2.0,!=4.3.0,!=5.0.0,!=5.1.0,<6.0.0)", "uvicorn[standard] (>=0.12.0,<0.19.0)"]
 dev = ["autoflake (>=1.4.0,<2.0.0)", "flake8 (>=3.8.3,<6.0.0)", "pre-commit (>=2.17.0,<3.0.0)", "uvicorn[standard] (>=0.12.0,<0.19.0)"]
 doc = ["mdx-include (>=1.4.1,<2.0.0)", "mkdocs (>=1.1.2,<2.0.0)", "mkdocs-markdownextradata-plugin (>=0.1.7,<0.3.0)", "mkdocs-material (>=8.1.4,<9.0.0)", "pyyaml (>=5.3.1,<7.0.0)", "typer[all] (>=0.6.1,<0.7.0)"]
-test = ["anyio[trio] (>=3.2.1,<4.0.0)", "black (==22.8.0)", "databases[sqlite] (>=0.3.2,<0.7.0)", "email-validator (>=1.1.1,<2.0.0)", "flake8 (>=3.8.3,<6.0.0)", "flask (>=1.1.2,<3.0.0)", "httpx (>=0.23.0,<0.24.0)", "isort (>=5.0.6,<6.0.0)", "mypy (==0.982)", "orjson (>=3.2.1,<4.0.0)", "passlib[bcrypt] (>=1.7.2,<2.0.0)", "peewee (>=3.13.3,<4.0.0)", "pytest (>=7.1.3,<8.0.0)", "pytest-cov (>=2.12.0,<5.0.0)", "python-jose[cryptography] (>=3.3.0,<4.0.0)", "python-multipart (>=0.0.5,<0.0.6)", "pyyaml (>=5.3.1,<7.0.0)", "requests (>=2.24.0,<3.0.0)", "sqlalchemy (>=1.3.18,<=1.4.41)", "types-orjson (==3.6.2)", "types-ujson (==5.5.0)", "ujson (>=4.0.1,!=4.0.2,!=4.1.0,!=4.2.0,!=4.3.0,!=5.0.0,!=5.1.0,<6.0.0)"]
+test = ["anyio[trio] (>=3.2.1,<4.0.0)", "black (==22.8.0)", "coverage[toml] (>=6.5.0,<7.0)", "databases[sqlite] (>=0.3.2,<0.7.0)", "email-validator (>=1.1.1,<2.0.0)", "flake8 (>=3.8.3,<6.0.0)", "flask (>=1.1.2,<3.0.0)", "httpx (>=0.23.0,<0.24.0)", "isort (>=5.0.6,<6.0.0)", "mypy (==0.982)", "orjson (>=3.2.1,<4.0.0)", "passlib[bcrypt] (>=1.7.2,<2.0.0)", "peewee (>=3.13.3,<4.0.0)", "pytest (>=7.1.3,<8.0.0)", "python-jose[cryptography] (>=3.3.0,<4.0.0)", "python-multipart (>=0.0.5,<0.0.6)", "pyyaml (>=5.3.1,<7.0.0)", "requests (>=2.24.0,<3.0.0)", "sqlalchemy (>=1.3.18,<=1.4.41)", "types-orjson (==3.6.2)", "types-ujson (==5.5.0)", "ujson (>=4.0.1,!=4.0.2,!=4.1.0,!=4.2.0,!=4.3.0,!=5.0.0,!=5.1.0,<6.0.0)"]
 
 [[package]]
 name = "google-api-core"
@@ -542,7 +542,7 @@ standard = ["colorama (>=0.4)", "httptools (>=0.5.0)", "python-dotenv (>=0.13)",
 [metadata]
 lock-version = "1.1"
 python-versions = "~3.11"
-content-hash = "f5a78668b57a40f3f805a9b70b9e4af30e529242acb8c7fcebdc7ad618e6ff8e"
+content-hash = "3d369f04b4990643ab63181cd9aacf43ebcd417ceda88ff760921b03c568776f"
 
 [metadata.files]
 anyio = [
@@ -574,8 +574,8 @@ colorama = [
     {file = "colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"},
 ]
 fastapi = [
-    {file = "fastapi-0.85.2-py3-none-any.whl", hash = "sha256:6292db0edd4a11f0d938d6033ccec5f706e9d476958bf33b119e8ddb4e524bde"},
-    {file = "fastapi-0.85.2.tar.gz", hash = "sha256:3e10ea0992c700e0b17b6de8c2092d7b9cd763ce92c49ee8d4be10fee3b2f367"},
+    {file = "fastapi-0.86.0-py3-none-any.whl", hash = "sha256:1020d7ca205d8b95813881fb3282e9c3656e47993531af3aa4ae11065b61dd2c"},
+    {file = "fastapi-0.86.0.tar.gz", hash = "sha256:cdcaff84ecf7ae939b9579f0c98b0a0989ee3dd855710a32bc985260d92612f6"},
 ]
 google-api-core = [
     {file = "google-api-core-2.10.2.tar.gz", hash = "sha256:10c06f7739fe57781f87523375e8e1a3a4674bf6392cd6131a3222182b971320"},
