@@ -41,7 +41,7 @@ class Config:
         return cls(
             api_url=os.getenv("API_URL", "https://api.bembel.party"),
             internal_token=_get_env("INTERNAL_TOKEN"),
-            sentry_dsn=_get_env("SENTRY_DSN"),
+            sentry_dsn=os.getenv("SENTRY_DSN"),
             telegram_token=_get_env("TELEGRAM_TOKEN"),
             wheel_token=_get_env("WHEEL_TOKEN"),
         )
