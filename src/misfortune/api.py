@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import random
 import secrets
 from datetime import datetime, timedelta
@@ -18,6 +19,8 @@ from pydantic import BaseModel
 
 from .config import Config
 from .drink import Drink
+
+_LOG = logging.getLogger(__name__)
 
 auth_token = HTTPBearer()
 
@@ -44,20 +47,25 @@ def generate_code() -> str:
     return secrets.token_urlsafe(16)
 
 
-_client = firestore.Client()
-
-
-def fetch_drinks() -> List[Drink]:
+async def fetch_drinks(client: firestore.AsyncClient) -> List[Drink]:
     drinks = []
-    for doc in _client.collection("drinks").stream():
+    for doc in await client.collection("drinks").get():
         drink = Drink.from_dict(doc.to_dict())
         drinks.append(drink)
 
     return drinks
 
 
+async def _client():
+    client = firestore.AsyncClient()
+    try:
+        yield client
+    finally:
+        client.close()
+
+
 state = State(
-    drinks=fetch_drinks(),
+    drinks=[],
     code=generate_code(),
 )
 
@@ -77,6 +85,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def startup():
+    client = firestore.AsyncClient()
+    try:
+        state.drinks = await fetch_drinks(client)
+    finally:
+        client.close()
 
 
 @app.get("/", response_class=RedirectResponse)
@@ -123,23 +140,27 @@ async def unlock(token: HTTPAuthorizationCredentials = Depends(auth_token)):
 
 @app.post("/drink", response_class=Response, status_code=201)
 async def add_drink(
-    name: str, token: HTTPAuthorizationCredentials = Depends(auth_token)
+    name: str,
+    client: firestore.AsyncClient = Depends(_client),
+    token: HTTPAuthorizationCredentials = Depends(auth_token),
 ):
     if token.credentials != config.internal_token:
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
     if name not in (d.name for d in state.drinks):
         drink = Drink.create(name)
-        _client.collection("drinks").document(drink.id).set(drink.to_dict())
+        await client.collection("drinks").document(drink.id).set(drink.to_dict())
         state.drinks.append(drink)
 
 
 @app.delete("/drink", response_class=Response, status_code=201)
 async def delete_drink(
-    drink_id: str, token: HTTPAuthorizationCredentials = Depends(auth_token)
+    drink_id: str,
+    client: firestore.AsyncClient = Depends(_client),
+    token: HTTPAuthorizationCredentials = Depends(auth_token),
 ):
     if token.credentials != config.internal_token:
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
-    _client.collection("drinks").document(drink_id).delete()
+    await client.collection("drinks").document(drink_id).delete()
     state.drinks = [d for d in state.drinks if d.id != drink_id]
