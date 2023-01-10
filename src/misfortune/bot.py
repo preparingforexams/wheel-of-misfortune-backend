@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import signal
 from typing import List, Optional
 from typing import cast
 
@@ -9,9 +10,9 @@ import telegram
 from more_itertools import chunked
 from telegram import Bot, Update, InlineKeyboardMarkup, InlineKeyboardButton, User
 from telegram.ext import (
-    Updater,
     CommandHandler,
-    Filters,
+    filters,
+    Application,
     CallbackQueryHandler,
     MessageHandler,
 )
@@ -23,13 +24,13 @@ _LOG = logging.getLogger("misfortune.bot")
 
 
 def handler(func):
-    def wrapper(self: MisfortuneBot, update: Update, _):
+    async def wrapper(self: MisfortuneBot, update: Update, _):
         user = update.effective_user
         if user is not None:
             if user.id not in self.allowed_users:
                 _LOG.debug(f"Filtered request from user {user.id}")
                 return
-        func(self, update)
+        await func(self, update)
 
     return wrapper
 
@@ -45,26 +46,26 @@ class MisfortuneBot:
         return {"Authorization": f"Bearer {self.api_token}"}
 
     @handler
-    def start(self, update: Update):
+    async def start(self, update: Update):
         user = cast(User, update.effective_user)
-        user.send_message(
+        await user.send_message(
             "Jede Nachricht, die du mir schickst,"
             " wird als Getränk auf dem Unglücksrad erscheinen.",
         )
 
     @handler
-    def list_drinks(self, update: Update):
-        markup = self._build_drinks_markup()
+    async def list_drinks(self, update: Update):
+        markup = await self._build_drinks_markup()
         user = cast(User, update.effective_user)
         if not markup:
-            user.send_message("Es stehen aktuell keine Getränke auf dem Rad.")
+            await user.send_message("Es stehen aktuell keine Getränke auf dem Rad.")
         else:
-            user.send_message(
+            await user.send_message(
                 "Drücke auf die Getränke, die du löschen willst:",
                 reply_markup=markup,
             )
 
-    def _build_drinks_markup(self) -> Optional[InlineKeyboardMarkup]:
+    async def _build_drinks_markup(self) -> Optional[InlineKeyboardMarkup]:
         response = requests.get(
             f"{self.api_url}/state",
             headers=self._headers(),
@@ -91,9 +92,9 @@ class MisfortuneBot:
         )
 
     @handler
-    def on_callback(self, update: Update):
+    async def on_callback(self, update: Update):
         drink_id = update.callback_query.data
-        update.callback_query.answer()
+        await update.callback_query.answer()
         response = requests.delete(
             f"{self.api_url}/drink",
             headers=self._headers(),
@@ -108,26 +109,26 @@ class MisfortuneBot:
                 "Didn't get message for callback query because message was too old"
             )
             try:
-                update.callback_query.from_user.send_message(
+                await update.callback_query.from_user.send_message(
                     "Die Nachricht mit der Getränkelist konnte nicht aktualisiert "
                     "werden. Erstelle eine neue mit /list."
                 )
-            except telegram.TelegramError:
+            except telegram.error.TelegramError:
                 _LOG.error("Could not send message to user", exc_info=True)
-        elif markup := self._build_drinks_markup():
-            message.edit_reply_markup(markup)
+        elif markup := await self._build_drinks_markup():
+            await message.edit_reply_markup(markup)
         else:
-            message.edit_text(
+            await message.edit_text(
                 text="Alle Getränke wurden gelöscht.",
                 reply_markup=None,  # type: ignore [arg-type]
             )
 
     @handler
-    def on_message(self, update: Update):
+    async def on_message(self, update: Update):
         text = update.message.text
         limit = 16
         if len(text) > limit:
-            update.message.reply_text(
+            await update.message.reply_text(
                 f"Sorry, nur Getränkenamen mit bis zu {limit} Zeichen werden akzeptiert"
                 f" (deine Nachricht hatte {len(text)} Zeichen)",
                 reply_to_message_id=update.message.message_id,
@@ -146,22 +147,28 @@ class MisfortuneBot:
 def run():
     config = Config.from_env()
     config.basic_setup()
-    updater = Updater(config.telegram_token)
-    bot = MisfortuneBot(updater.bot, config)
-    dispatcher = updater.dispatcher
+    app = Application.builder().token(config.telegram_token).build()
+    bot = MisfortuneBot(app.bot, config)
 
-    dispatcher.add_handler(
-        CommandHandler("start", bot.start, filters=~Filters.update.edited_message)
+    app.add_handler(
+        CommandHandler(
+            "start",
+            bot.start,
+            filters=~filters.UpdateType.EDITED_MESSAGE,
+        )
     )
-    dispatcher.add_handler(
-        CommandHandler("list", bot.list_drinks, filters=~Filters.update.edited_message)
+    app.add_handler(
+        CommandHandler(
+            "list",
+            bot.list_drinks,
+            filters=~filters.UpdateType.EDITED_MESSAGE,
+        )
     )
-    dispatcher.add_handler(CallbackQueryHandler(bot.on_callback))
-    dispatcher.add_handler(MessageHandler(Filters.text, bot.on_message))
+    app.add_handler(CallbackQueryHandler(bot.on_callback))
+    app.add_handler(MessageHandler(filters.TEXT, bot.on_message))
 
-    updater.start_polling()
     _LOG.info("Running")
-    updater.idle()
+    app.run_polling(stop_signals=[signal.SIGTERM, signal.SIGINT])
 
 
 if __name__ == "__main__":
