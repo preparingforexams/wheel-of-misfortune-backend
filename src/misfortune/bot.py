@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import logging
 from typing import List, Optional
+from typing import cast
 
 import requests
+import telegram
 from more_itertools import chunked
-from telegram import Bot, Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Bot, Update, InlineKeyboardMarkup, InlineKeyboardButton, User
 from telegram.ext import (
     Updater,
     CommandHandler,
@@ -44,20 +46,20 @@ class MisfortuneBot:
 
     @handler
     def start(self, update: Update):
-        self.telegram.send_message(
-            update.effective_user.id,
-            "Jede Nachricht, die du mir schickst, wird als Getränk auf dem Unglücksrad erscheinen.",
+        user = cast(User, update.effective_user)
+        user.send_message(
+            "Jede Nachricht, die du mir schickst,"
+            " wird als Getränk auf dem Unglücksrad erscheinen.",
         )
 
     @handler
     def list_drinks(self, update: Update):
         markup = self._build_drinks_markup()
+        user = cast(User, update.effective_user)
         if not markup:
-            update.effective_user.send_message(
-                "Es stehen aktuell keine Getränke auf dem Rad."
-            )
+            user.send_message("Es stehen aktuell keine Getränke auf dem Rad.")
         else:
-            update.effective_user.send_message(
+            user.send_message(
                 "Drücke auf die Getränke, die du löschen willst:",
                 reply_markup=markup,
             )
@@ -100,13 +102,24 @@ class MisfortuneBot:
             },
         )
         response.raise_for_status()
-        markup = self._build_drinks_markup()
-        if markup:
-            update.callback_query.message.edit_reply_markup(markup)
+        message = update.callback_query.message
+        if message is None:
+            _LOG.warning(
+                "Didn't get message for callback query because message was too old"
+            )
+            try:
+                update.callback_query.from_user.send_message(
+                    "Die Nachricht mit der Getränkelist konnte nicht aktualisiert "
+                    "werden. Erstelle eine neue mit /list."
+                )
+            except telegram.TelegramError:
+                _LOG.error("Could not send message to user", exc_info=True)
+        elif markup := self._build_drinks_markup():
+            message.edit_reply_markup(markup)
         else:
-            update.callback_query.message.edit_text(
+            message.edit_text(
                 text="Alle Getränke wurden gelöscht.",
-                reply_markup=None,
+                reply_markup=None,  # type: ignore [arg-type]
             )
 
     @handler

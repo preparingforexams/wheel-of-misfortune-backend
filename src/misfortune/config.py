@@ -21,6 +21,13 @@ def _non_probe_sampler(context: dict[str, Any]) -> float:
     return 1.0
 
 
+def _get_env(key: str) -> str:
+    value = os.getenv(key)
+    if not value:
+        raise ValueError(f"Missing environment variable: {key}")
+    return value
+
+
 @dataclass
 class Config:
     api_url: str
@@ -33,10 +40,10 @@ class Config:
     def from_env(cls) -> Config:
         return cls(
             api_url=os.getenv("API_URL", "https://api.bembel.party"),
-            internal_token=os.getenv("INTERNAL_TOKEN"),
-            sentry_dsn=os.getenv("SENTRY_DSN"),
-            telegram_token=os.getenv("TELEGRAM_TOKEN"),
-            wheel_token=os.getenv("WHEEL_TOKEN"),
+            internal_token=_get_env("INTERNAL_TOKEN"),
+            sentry_dsn=_get_env("SENTRY_DSN"),
+            telegram_token=_get_env("TELEGRAM_TOKEN"),
+            wheel_token=_get_env("WHEEL_TOKEN"),
         )
 
     def basic_setup(self):
