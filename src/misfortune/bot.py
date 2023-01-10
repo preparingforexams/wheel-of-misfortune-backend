@@ -5,8 +5,9 @@ import signal
 from typing import List, Optional
 from typing import cast
 
-import requests
+import aiohttp
 import telegram
+from asyncache import cached
 from more_itertools import chunked
 from telegram import Bot, Update, InlineKeyboardMarkup, InlineKeyboardButton, User
 from telegram.ext import (
@@ -42,8 +43,12 @@ class MisfortuneBot:
         self.api_url = config.api_url
         self.api_token = config.internal_token
 
-    def _headers(self) -> dict:
-        return {"Authorization": f"Bearer {self.api_token}"}
+    @property
+    @cached({})
+    async def _api_session(self) -> aiohttp.ClientSession:
+        return aiohttp.ClientSession(
+            self.api_url, headers=dict(Authorization=f"Bearer {self.api_token}")
+        )
 
     @handler
     async def start(self, update: Update):
@@ -66,12 +71,11 @@ class MisfortuneBot:
             )
 
     async def _build_drinks_markup(self) -> Optional[InlineKeyboardMarkup]:
-        response = requests.get(
-            f"{self.api_url}/state",
-            headers=self._headers(),
-        )
+        session = await self._api_session
+        response = await session.get("/state")
         response.raise_for_status()
-        drinks = [Drink.from_dict(d) for d in response.json()["drinks"]]
+        json = await response.json()
+        drinks = [Drink.from_dict(d) for d in json["drinks"]]
         if not drinks:
             return None
         return InlineKeyboardMarkup(self._build_buttons(drinks))
@@ -95,9 +99,9 @@ class MisfortuneBot:
     async def on_callback(self, update: Update):
         drink_id = update.callback_query.data
         await update.callback_query.answer()
-        response = requests.delete(
-            f"{self.api_url}/drink",
-            headers=self._headers(),
+        session = await self._api_session
+        response = await session.delete(
+            "/drink",
             params={
                 "drink_id": drink_id,
             },
@@ -135,13 +139,14 @@ class MisfortuneBot:
             )
             return
 
-        requests.post(
-            f"{self.api_url}/drink",
-            headers=self._headers(),
+        session = await self._api_session
+        response = await session.post(
+            "/drink",
             params={
                 "name": text,
             },
-        ).raise_for_status()
+        )
+        response.raise_for_status()
 
 
 def run():
