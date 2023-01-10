@@ -2,8 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+ENV POETRY_VIRTUALENVS_CREATE=false
+
 RUN pip install poetry --no-cache
-RUN poetry config virtualenvs.create false
 
 COPY [ "poetry.toml", "poetry.lock", "pyproject.toml", "./" ]
 COPY src .
