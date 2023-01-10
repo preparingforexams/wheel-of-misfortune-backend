@@ -72,7 +72,8 @@ app.add_middleware(
         "https://wheel.bembel.party",
         "http://localhost",
         "http://localhost:8080",
-    ], allow_credentials=True,
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -121,7 +122,9 @@ async def unlock(token: HTTPAuthorizationCredentials = Depends(auth_token)):
 
 
 @app.post("/drink", response_class=Response, status_code=201)
-async def add_drink(name: str, token: HTTPAuthorizationCredentials = Depends(auth_token)):
+async def add_drink(
+    name: str, token: HTTPAuthorizationCredentials = Depends(auth_token)
+):
     if token.credentials != config.internal_token:
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
@@ -132,7 +135,9 @@ async def add_drink(name: str, token: HTTPAuthorizationCredentials = Depends(aut
 
 
 @app.delete("/drink", response_class=Response, status_code=201)
-async def delete_drink(drink_id: str, token: HTTPAuthorizationCredentials = Depends(auth_token)):
+async def delete_drink(
+    drink_id: str, token: HTTPAuthorizationCredentials = Depends(auth_token)
+):
     if token.credentials != config.internal_token:
         raise HTTPException(HTTPStatus.FORBIDDEN)
 

@@ -6,7 +6,13 @@ from typing import List, Optional
 import requests
 from more_itertools import chunked
 from telegram import Bot, Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import Updater, CommandHandler, Filters, CallbackQueryHandler, MessageHandler
+from telegram.ext import (
+    Updater,
+    CommandHandler,
+    Filters,
+    CallbackQueryHandler,
+    MessageHandler,
+)
 
 from misfortune.config import Config
 from misfortune.drink import Drink
@@ -34,9 +40,7 @@ class MisfortuneBot:
         self.api_token = config.internal_token
 
     def _headers(self) -> dict:
-        return {
-            "Authorization": f"Bearer {self.api_token}"
-        }
+        return {"Authorization": f"Bearer {self.api_token}"}
 
     @handler
     def start(self, update: Update):
@@ -49,7 +53,9 @@ class MisfortuneBot:
     def list_drinks(self, update: Update):
         markup = self._build_drinks_markup()
         if not markup:
-            update.effective_user.send_message("Es stehen aktuell keine Getränke auf dem Rad.")
+            update.effective_user.send_message(
+                "Es stehen aktuell keine Getränke auf dem Rad."
+            )
         else:
             update.effective_user.send_message(
                 "Drücke auf die Getränke, die du löschen willst:",
@@ -69,15 +75,18 @@ class MisfortuneBot:
 
     @staticmethod
     def _build_buttons(drinks: List[Drink]) -> List[List[InlineKeyboardButton]]:
-        return list(chunked(
-            [
-                InlineKeyboardButton(
-                    text=drink.name,
-                    callback_data=drink.id,
-                ) for drink in drinks
-            ],
-            n=2,
-        ))
+        return list(
+            chunked(
+                [
+                    InlineKeyboardButton(
+                        text=drink.name,
+                        callback_data=drink.id,
+                    )
+                    for drink in drinks
+                ],
+                n=2,
+            )
+        )
 
     @handler
     def on_callback(self, update: Update):
@@ -88,7 +97,7 @@ class MisfortuneBot:
             headers=self._headers(),
             params={
                 "drink_id": drink_id,
-            }
+            },
         )
         response.raise_for_status()
         markup = self._build_drinks_markup()
@@ -128,16 +137,12 @@ def run():
     bot = MisfortuneBot(updater.bot, config)
     dispatcher = updater.dispatcher
 
-    dispatcher.add_handler(CommandHandler(
-        "start",
-        bot.start,
-        filters=~Filters.update.edited_message
-    ))
-    dispatcher.add_handler(CommandHandler(
-        "list",
-        bot.list_drinks,
-        filters=~Filters.update.edited_message
-    ))
+    dispatcher.add_handler(
+        CommandHandler("start", bot.start, filters=~Filters.update.edited_message)
+    )
+    dispatcher.add_handler(
+        CommandHandler("list", bot.list_drinks, filters=~Filters.update.edited_message)
+    )
     dispatcher.add_handler(CallbackQueryHandler(bot.on_callback))
     dispatcher.add_handler(MessageHandler(Filters.text, bot.on_message))
 
@@ -146,5 +151,5 @@ def run():
     updater.idle()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run()

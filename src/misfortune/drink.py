@@ -28,4 +28,3 @@ class Drink(BaseModel):
             id=doc["id"],
             name=doc["name"],
         )
-
