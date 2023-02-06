@@ -19,7 +19,7 @@ uvicorn = "^0.20.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.0.0"
-mypy = "^0.991"
+mypy = "^1.0"
 
 [build-system]
 requires = ["poetry-core>=1.2.0"]
