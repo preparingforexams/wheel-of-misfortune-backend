@@ -97,8 +97,13 @@ class MisfortuneBot:
 
     @handler
     async def on_callback(self, update: Update):
-        drink_id = update.callback_query.data
-        await update.callback_query.answer()
+        callback_query = update.callback_query
+
+        if callback_query is None:
+            raise ValueError("Callback query filter failed")
+
+        drink_id = callback_query.data
+        await callback_query.answer()
         session = await self._api_session
         response = await session.delete(
             "/drink",
@@ -107,13 +112,13 @@ class MisfortuneBot:
             },
         )
         response.raise_for_status()
-        message = update.callback_query.message
+        message = callback_query.message
         if message is None:
             _LOG.warning(
                 "Didn't get message for callback query because message was too old"
             )
             try:
-                await update.callback_query.from_user.send_message(
+                await callback_query.from_user.send_message(
                     "Die Nachricht mit der Getränkelist konnte nicht aktualisiert "
                     "werden. Erstelle eine neue mit /list."
                 )
@@ -129,13 +134,22 @@ class MisfortuneBot:
 
     @handler
     async def on_message(self, update: Update):
-        text = update.message.text
+        message = update.message
+
+        if message is None:
+            raise ValueError("Message filter failed (message is None)")
+
+        text = message.text
+
+        if text is None:
+            raise ValueError("Message filter failed (text is None)")
+
         limit = 16
         if len(text) > limit:
-            await update.message.reply_text(
+            await message.reply_text(
                 f"Sorry, nur Getränkenamen mit bis zu {limit} Zeichen werden akzeptiert"
                 f" (deine Nachricht hatte {len(text)} Zeichen)",
-                reply_to_message_id=update.message.message_id,
+                reply_to_message_id=message.message_id,
             )
             return
 
