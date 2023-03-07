@@ -51,3 +51,9 @@ jobs:
         with:
           exec: helm upgrade api . --install --namespace=misfortune --atomic
           kubeconfig: '${{ secrets.KUBECONFIG_RAW }}'
+      - name: Clean up old container images
+        uses: actions/delete-package-versions@v4
+        with:
+          package-name: wheel-of-misfortune-backend
+          package-type: container
+          min-versions-to-keep: 10
