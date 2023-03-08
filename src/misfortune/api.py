@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import random
 import secrets
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from http import HTTPStatus
 from typing import List, Optional
@@ -71,7 +72,22 @@ state = State(
 
 config = Config.from_env()
 config.basic_setup()
-app = FastAPI()
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    client = firestore.AsyncClient()
+    try:
+        state.drinks = await fetch_drinks(client)
+    finally:
+        client.close()
+
+    yield
+
+    # We don't have any teardown to do
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -85,15 +101,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-async def startup():
-    client = firestore.AsyncClient()
-    try:
-        state.drinks = await fetch_drinks(client)
-    finally:
-        client.close()
 
 
 @app.get("/", response_class=RedirectResponse)
