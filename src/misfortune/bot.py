@@ -164,7 +164,13 @@ class MisfortuneBot:
 def run():
     config = Config.from_env()
     config.basic_setup()
-    app = Application.builder().token(config.telegram_token).build()
+    app = (
+        Application.builder()
+        .token(config.telegram_token)
+        .http_version("1.1")
+        .get_updates_http_version("1.1")
+        .build()
+    )
     bot = MisfortuneBot(app.bot, config)
 
     app.add_handler(
