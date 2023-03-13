@@ -29,6 +29,7 @@ def _get_env(key: str) -> str:
 @dataclass
 class Config:
     api_url: str
+    app_version: str
     internal_token: str
     telegram_token: str
     wheel_token: str
@@ -38,6 +39,7 @@ class Config:
     def from_env(cls) -> Self:
         return cls(
             api_url=os.getenv("API_URL", "https://api.bembel.party"),
+            app_version=os.getenv("APP_VERSION") or "dev",
             internal_token=_get_env("INTERNAL_TOKEN"),
             sentry_dsn=os.getenv("SENTRY_DSN"),
             telegram_token=_get_env("TELEGRAM_TOKEN"),
@@ -51,5 +53,6 @@ class Config:
         if dsn:
             sentry_sdk.init(
                 dsn=dsn,
+                release=self.app_version,
                 traces_sampler=_non_probe_sampler,
             )

@@ -11,4 +11,7 @@ COPY src .
 
 RUN poetry install --no-dev
 
+ARG APP_VERSION
+ENV APP_VERSION=$APP_VERSION
+
 EXPOSE 8000
