@@ -75,7 +75,7 @@ config.basic_setup()
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI):
+async def lifespan(_):
     client = firestore.AsyncClient()
     try:
         state.drinks = await fetch_drinks(client)
