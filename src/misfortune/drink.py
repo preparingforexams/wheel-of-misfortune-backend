@@ -1,6 +1,5 @@
-from __future__ import annotations
-
 import uuid
+from typing import Self
 
 from pydantic import BaseModel
 
@@ -16,15 +15,15 @@ class Drink(BaseModel):
         }
 
     @classmethod
-    def create(cls, name: str) -> Drink:
-        return Drink(
+    def create(cls, name: str) -> Self:
+        return cls(
             id=str(uuid.uuid4()),
             name=name,
         )
 
     @classmethod
-    def from_dict(cls, doc: dict) -> Drink:
-        return Drink(
+    def from_dict(cls, doc: dict) -> Self:
+        return cls(
             id=doc["id"],
             name=doc["name"],
         )

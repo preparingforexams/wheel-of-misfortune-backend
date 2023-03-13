@@ -1,9 +1,7 @@
-from __future__ import annotations
-
 import logging
 import os
 from dataclasses import dataclass
-from typing import Optional, Any
+from typing import Optional, Any, Self
 
 import sentry_sdk
 
@@ -37,7 +35,7 @@ class Config:
     sentry_dsn: Optional[str]
 
     @classmethod
-    def from_env(cls) -> Config:
+    def from_env(cls) -> Self:
         return cls(
             api_url=os.getenv("API_URL", "https://api.bembel.party"),
             internal_token=_get_env("INTERNAL_TOKEN"),
@@ -46,7 +44,7 @@ class Config:
             wheel_token=_get_env("WHEEL_TOKEN"),
         )
 
-    def basic_setup(self):
+    def basic_setup(self) -> None:
         logging.basicConfig()
         logging.getLogger("misfortune").setLevel(logging.DEBUG)
         dsn = self.sentry_dsn
