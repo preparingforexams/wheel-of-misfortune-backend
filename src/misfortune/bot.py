@@ -23,7 +23,7 @@ _LOG = logging.getLogger("misfortune.bot")
 
 
 def handler(func):
-    async def wrapper(self: MisfortuneBot, update: Update, _):
+    async def wrapper(self: "MisfortuneBot", update: Update, _):
         user = update.effective_user
         if user is not None:
             if user.id not in self.allowed_users:
