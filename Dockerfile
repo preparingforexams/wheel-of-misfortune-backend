@@ -4,7 +4,7 @@ WORKDIR /app
 
 ENV POETRY_VIRTUALENVS_CREATE=false
 
-RUN pip install poetry==1.4.2 --no-cache
+RUN pip install poetry==1.5.0 --no-cache
 
 COPY [ "poetry.toml", "poetry.lock", "pyproject.toml", "./" ]
 COPY src .
