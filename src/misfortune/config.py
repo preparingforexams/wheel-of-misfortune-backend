@@ -56,3 +56,9 @@ class Config:
                 release=self.app_version,
                 traces_sampler=_non_probe_sampler,
             )
+
+
+def init_config() -> Config:
+    config = Config.from_env()
+    config.basic_setup()
+    return config

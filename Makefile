@@ -7,5 +7,4 @@ nice:
 	poetry run mypy src/
 
 test:
-	echo "There are no tests you dingus"
-	# poetry run pytest src/
+	poetry run pytest src/

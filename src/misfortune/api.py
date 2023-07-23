@@ -16,7 +16,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from google.cloud import firestore
 from pydantic import BaseModel
 
-from .config import Config
+from .config import init_config
 from .drink import Drink
 
 _LOG = logging.getLogger(__name__)
@@ -68,8 +68,7 @@ state = State(
     code=generate_code(),
 )
 
-config = Config.from_env()
-config.basic_setup()
+config = init_config()
 
 
 @asynccontextmanager
