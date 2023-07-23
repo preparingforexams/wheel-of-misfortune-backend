@@ -4,7 +4,6 @@ import secrets
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from http import HTTPStatus
-from typing import List, Optional
 
 import pendulum
 from fastapi import FastAPI, Depends
@@ -25,10 +24,10 @@ auth_token = HTTPBearer()
 
 
 class State(BaseModel):
-    drinks: List[Drink]
+    drinks: list[Drink]
     code: str
-    drinking_age: Optional[datetime] = None
-    is_locked = False
+    drinking_age: datetime | None = None
+    is_locked: bool = False
     current_drink: int = 0
     speed: float = 0.0
 
@@ -46,7 +45,7 @@ def generate_code() -> str:
     return secrets.token_urlsafe(16)
 
 
-async def fetch_drinks(client: firestore.AsyncClient) -> List[Drink]:
+async def fetch_drinks(client: firestore.AsyncClient) -> list[Drink]:
     drinks = []
     for doc in await client.collection("drinks").get():
         drink = Drink.from_dict(doc.to_dict())
