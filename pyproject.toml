@@ -28,6 +28,11 @@ pytest-mock = "^3.11.1"
 requires = ["poetry-core>=1.2.0"]
 build-backend = "poetry.core.masonry.api"
 
+[tool.pytest.ini_options]
+filterwarnings = [
+    "error",
+]
+
 [[tool.mypy.overrides]]
 module = "asyncache"
 ignore_missing_imports = true
