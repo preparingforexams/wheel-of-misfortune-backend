@@ -89,9 +89,18 @@ jobs:
         with:
           exec: helm upgrade api . --install --namespace=misfortune --atomic
           kubeconfig: '${{ secrets.KUBECONFIG_RAW }}'
-      - name: Clean up old container images
+
+  clean:
+    runs-on: ubuntu-latest
+    concurrency: cleanup
+    continue-on-error: true
+    needs: [ deploy ]
+    steps:
+      - name: Inject slug/short variables
+        uses: rlespinasse/github-slug-action@v4
+      - name: Clean up old app container images
         uses: actions/delete-package-versions@v4
         with:
-          package-name: wheel-of-misfortune-backend
+          package-name: ${{ env.GITHUB_REPOSITORY_NAME_PART_SLUG }}
           package-type: container
           min-versions-to-keep: 10
