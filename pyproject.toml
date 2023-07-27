@@ -34,6 +34,9 @@ filterwarnings = [
     # "error",
 ]
 
+[tool.isort]
+profile = "black"
+
 [[tool.mypy.overrides]]
 module = "asyncache"
 ignore_missing_imports = true

@@ -7,8 +7,13 @@ import telegram
 from asyncache import cached
 from more_itertools import chunked
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update, User
-from telegram.ext import (Application, CallbackQueryHandler, CommandHandler,
-                          MessageHandler, filters)
+from telegram.ext import (
+    Application,
+    CallbackQueryHandler,
+    CommandHandler,
+    MessageHandler,
+    filters,
+)
 
 from misfortune.config import Config
 from misfortune.drink import Drink
