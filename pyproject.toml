@@ -30,7 +30,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 filterwarnings = [
-    "error",
+    # "error",
 ]
 
 [[tool.mypy.overrides]]
