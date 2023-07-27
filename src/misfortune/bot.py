@@ -1,20 +1,14 @@
 import logging
 import signal
-from typing import List, Optional
-from typing import cast
+from typing import List, Optional, cast
 
 import aiohttp
 import telegram
 from asyncache import cached
 from more_itertools import chunked
-from telegram import Bot, Update, InlineKeyboardMarkup, InlineKeyboardButton, User
-from telegram.ext import (
-    CommandHandler,
-    filters,
-    Application,
-    CallbackQueryHandler,
-    MessageHandler,
-)
+from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update, User
+from telegram.ext import (Application, CallbackQueryHandler, CommandHandler,
+                          MessageHandler, filters)
 
 from misfortune.config import Config
 from misfortune.drink import Drink

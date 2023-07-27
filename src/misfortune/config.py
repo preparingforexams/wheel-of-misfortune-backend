@@ -1,7 +1,7 @@
 import logging
 import os
 from dataclasses import dataclass
-from typing import Optional, Any, Self
+from typing import Any, Optional, Self
 
 import sentry_sdk
 

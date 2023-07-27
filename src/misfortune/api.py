@@ -6,12 +6,11 @@ from datetime import datetime, timedelta
 from http import HTTPStatus
 
 import pendulum
-from fastapi import FastAPI, Depends
+from fastapi import Depends, FastAPI
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
-from fastapi.responses import Response
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import RedirectResponse, Response
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from google.cloud import firestore
 from pydantic import BaseModel
 
