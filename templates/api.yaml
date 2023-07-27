@@ -27,9 +27,7 @@ spec:
       containers:
         - name: api
           image: "{{ .Values.image }}"
-          command:
-            - poetry
-            - run
+          args:
             - uvicorn
             - misfortune.api:app
             - --host

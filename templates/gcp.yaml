@@ -3,6 +3,6 @@ kind: Secret
 metadata:
   name: gcp
 stringData:
-  GOOGLE_APPLICATION_CREDENTIALS: /secret/sa.json
+  GOOGLE_APPLICATION_CREDENTIALS: "/secret/sa.json"
 data:
-  SERVICE_ACCOUNT_JSON: '{{ .Values.serviceAccount.json }}'
+  SERVICE_ACCOUNT_JSON: "{{ .Values.serviceAccount.json }}"

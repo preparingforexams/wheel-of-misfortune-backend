@@ -24,7 +24,7 @@ spec:
       containers:
         - name: bot
           image: "{{ .Values.image }}"
-          command:
+          args:
             - python
             - -m
             - misfortune.bot
