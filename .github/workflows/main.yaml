@@ -16,6 +16,7 @@ jobs:
       - name: Check coding standards
         run: |
           poetry run black --check src/
+          poetry run isort --check-only src/
           poetry run mypy src/
 
   test:
@@ -33,7 +34,6 @@ jobs:
     runs-on: ubuntu-latest
     if: success() && github.event_name == 'pull_request'
     needs:
-      - check_format
       - lint
       - test
     steps:
