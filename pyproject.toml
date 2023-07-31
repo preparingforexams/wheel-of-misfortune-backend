@@ -37,6 +37,9 @@ filterwarnings = [
 [tool.isort]
 profile = "black"
 
+[tool.mypy]
+plugins = [ "pydantic.mypy" ]
+
 [[tool.mypy.overrides]]
 module = "asyncache"
 ignore_missing_imports = true
