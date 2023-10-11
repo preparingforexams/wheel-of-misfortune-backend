@@ -1,8 +1,8 @@
 import logging
 import signal
-from typing import List, Optional, cast
+from typing import cast
 
-import aiohttp
+import httpx
 import telegram
 from asyncache import cached
 from more_itertools import chunked
@@ -34,21 +34,16 @@ def handler(func):
 
 
 class MisfortuneBot:
-    def __init__(self, bot: Bot, config: Config):
+    def __init__(self, bot: Bot, config: Config) -> None:
         self.allowed_users = [133399998, 1603772877, 444493856]
         self.telegram = bot
-        self.api_url = config.api_url
-        self.api_token = config.internal_token
-
-    @property
-    @cached({})
-    async def _api_session(self) -> aiohttp.ClientSession:
-        return aiohttp.ClientSession(
-            self.api_url, headers=dict(Authorization=f"Bearer {self.api_token}")
+        self._api_session = httpx.AsyncClient(
+            base_url=config.api_url,
+            headers=dict(Authorization=f"Bearer {config.internal_token}"),
         )
 
     @handler
-    async def start(self, update: Update):
+    async def start(self, update: Update) -> None:
         user = cast(User, update.effective_user)
         await user.send_message(
             "Jede Nachricht, die du mir schickst,"
@@ -56,7 +51,7 @@ class MisfortuneBot:
         )
 
     @handler
-    async def list_drinks(self, update: Update):
+    async def list_drinks(self, update: Update) -> None:
         markup = await self._build_drinks_markup()
         user = cast(User, update.effective_user)
         if not markup:
@@ -67,9 +62,8 @@ class MisfortuneBot:
                 reply_markup=markup,
             )
 
-    async def _build_drinks_markup(self) -> Optional[InlineKeyboardMarkup]:
-        session = await self._api_session
-        response = await session.get("/state")
+    async def _build_drinks_markup(self) -> InlineKeyboardMarkup | None:
+        response = await self._api_session.get("/state")
         response.raise_for_status()
         json = await response.json()
         drinks = [Drink.from_dict(d) for d in json["drinks"]]
@@ -78,7 +72,7 @@ class MisfortuneBot:
         return InlineKeyboardMarkup(self._build_buttons(drinks))
 
     @staticmethod
-    def _build_buttons(drinks: List[Drink]) -> List[List[InlineKeyboardButton]]:
+    def _build_buttons(drinks: list[Drink]) -> list[list[InlineKeyboardButton]]:
         return list(
             chunked(
                 [
@@ -101,8 +95,7 @@ class MisfortuneBot:
 
         drink_id = callback_query.data
         await callback_query.answer()
-        session = await self._api_session
-        response = await session.delete(
+        response = await self._api_session.delete(
             "/drink",
             params={
                 "drink_id": drink_id,
@@ -126,7 +119,7 @@ class MisfortuneBot:
         else:
             await message.edit_text(
                 text="Alle Getränke wurden gelöscht.",
-                reply_markup=None,  # type: ignore [arg-type]
+                reply_markup=None,
             )
 
     @handler
@@ -150,8 +143,7 @@ class MisfortuneBot:
             )
             return
 
-        session = await self._api_session
-        response = await session.post(
+        response = await self._api_session.post(
             "/drink",
             params={
                 "name": text,
