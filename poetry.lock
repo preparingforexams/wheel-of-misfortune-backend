@@ -32,20 +32,6 @@ test = ["anyio[trio]", "coverage[toml] (>=4.5)", "hypothesis (>=4.0)", "mock (>=
 trio = ["trio (<0.22)"]
 
 [[package]]
-name = "asyncache"
-version = "0.3.1"
-description = "Helpers to use cachetools with async code."
-optional = false
-python-versions = ">=3.8,<4.0"
-files = [
-    {file = "asyncache-0.3.1-py3-none-any.whl", hash = "sha256:ef20a1024d265090dd1e0785c961cf98b9c32cc7d9478973dcf25ac1b80011f5"},
-    {file = "asyncache-0.3.1.tar.gz", hash = "sha256:9a1e60a75668e794657489bdea6540ee7e3259c483517b934670db7600bf5035"},
-]
-
-[package.dependencies]
-cachetools = ">=5.2.0,<6.0.0"
-
-[[package]]
 name = "black"
 version = "23.9.1"
 description = "The uncompromising code formatter."
@@ -1139,4 +1125,4 @@ standard = ["colorama (>=0.4)", "httptools (>=0.5.0)", "python-dotenv (>=0.13)",
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "0a6099c086e4463e35fdf4502d11389e5ea59896788570e592e2ad33fcea0c42"
+content-hash = "29c198bf707f41c01bf837c8285a56960d349ea41bb06302d45b55f5eb59e65e"
