@@ -64,7 +64,7 @@ class MisfortuneBot:
     async def _build_drinks_markup(self) -> InlineKeyboardMarkup | None:
         response = await self._api_session.get("/state")
         response.raise_for_status()
-        json = await response.json()
+        json = response.json()
         drinks = [Drink.from_dict(d) for d in json["drinks"]]
         if not drinks:
             return None
