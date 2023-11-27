@@ -12,7 +12,7 @@ more-itertools = "^10.0.0"
 pendulum = "^2.1.2"
 pydantic = "^2.0.0"
 python = "~3.11"
-python-telegram-bot = "20.6"
+python-telegram-bot = "20.7"
 sentry-sdk = "^1.9.9"
 uvicorn = "^0.24.0"
 
