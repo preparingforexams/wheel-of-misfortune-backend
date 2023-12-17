@@ -35,7 +35,7 @@ class State(BaseModel):
         if drinking_age is None:
             return True
 
-        now = pendulum.now()
+        now: datetime = pendulum.now()
         delta = now - drinking_age
         return delta > timedelta(minutes=1)
 
