@@ -19,7 +19,7 @@ uvicorn = "^0.26.0"
 [tool.poetry.group.dev.dependencies]
 black = "^24.0.0"
 mypy = "~1.8"
-pytest = "^7.4.0"
+pytest = "^8.0.0"
 pytest-mock = "^3.11.1"
 ruff = "0.1.14"
 
