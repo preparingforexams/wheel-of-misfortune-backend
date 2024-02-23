@@ -113,6 +113,10 @@ class MisfortuneBot:
                 )
             except telegram.error.TelegramError:
                 _LOG.error("Could not send message to user", exc_info=True)
+        elif isinstance(message, telegram.InaccessibleMessage):
+            _LOG.error("Callback message is inaccessible")
+        elif not isinstance(message, telegram.Message):
+            _LOG.error("Callback message is not inaccessible, but not a Message object")
         elif markup := await self._build_drinks_markup():
             await message.edit_reply_markup(markup)
         else:
