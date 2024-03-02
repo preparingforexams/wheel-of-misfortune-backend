@@ -45,7 +45,7 @@ jobs:
           TELEGRAM_API_TOKEN: ${{ secrets.TELEGRAM_API_TOKEN }}
           WHEEL_TOKEN: ${{ secrets.MISFORTUNE_WHEEL_TOKEN }}
         run: "envsubst < values.yaml > values_sub.yaml && mv values_sub.yaml values.yaml"
-      - uses: WyriHaximus/github-action-helm3@v3
+      - uses: WyriHaximus/github-action-helm3@v4
         with:
           exec: helm upgrade api . --install --namespace=misfortune --atomic
           kubeconfig: '${{ secrets.KUBECONFIG_RAW }}'
