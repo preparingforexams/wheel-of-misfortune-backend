@@ -5,7 +5,7 @@ description = ""
 authors = ["Björn Petersen <git@bjoernpetersen.net>"]
 
 [tool.poetry.dependencies]
-fastapi = "^0.109.0"
+fastapi = "^0.110.0"
 google-cloud-firestore = "^2.5.2"
 httpx = "*"
 more-itertools = "^10.0.0"
