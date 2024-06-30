@@ -26,7 +26,7 @@ spec:
             secretName: gcp
       containers:
         - name: api
-          image: "{{ .Values.image }}"
+          image: "{{ .Values.image }}:{{ .Values.appVersion }}"
           args:
             - uvicorn
             - misfortune.api:app

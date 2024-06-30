@@ -1,0 +1,15 @@
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: gcp
+spec:
+  secretStoreRef:
+    name: doppler-born
+    kind: ClusterSecretStore
+  target:
+    name: gcp
+  data:
+    - remoteRef:
+        key: MISFORTUNE_GSA_JSON
+      secretKey: SERVICE_ACCOUNT_JSON
