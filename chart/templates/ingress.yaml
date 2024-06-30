@@ -6,6 +6,16 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt
 spec:
   rules:
+    - host: api-local.bembel.party
+      http:
+        paths:
+          - backend:
+              service:
+                name: api
+                port:
+                  name: http
+            pathType: Prefix
+            path: /
     - host: api.bembel.party
       http:
         paths:
@@ -19,4 +29,5 @@ spec:
   tls:
     - hosts:
         - api.bembel.party
+        - api-local.bembel.party
       secretName: api-cert
