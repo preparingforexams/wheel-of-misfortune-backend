@@ -38,6 +38,9 @@ spec:
           volumeMounts:
             - mountPath: /secret
               name: gcp
+          env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /secret/sa.json
           envFrom:
             - secretRef:
                 name: gcp
