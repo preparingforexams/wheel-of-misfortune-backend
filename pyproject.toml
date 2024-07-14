@@ -20,7 +20,7 @@ uvicorn = "^0.30.0"
 mypy = "~1.10"
 pytest = "^8.0.0"
 pytest-mock = "^3.11.1"
-ruff = "0.5.1"
+ruff = "0.5.2"
 
 [build-system]
 requires = ["poetry-core>=1.2.0"]
