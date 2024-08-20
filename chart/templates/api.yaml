@@ -46,6 +46,13 @@ spec:
                 name: gcp
             - secretRef:
                 name: tokens
+          startupProbe:
+            failureThreshold: 16
+            initialDelaySeconds: 10
+            httpGet:
+              port: http
+              path: /probe/live
+
           livenessProbe:
             httpGet:
               port: http
