@@ -1,7 +1,7 @@
 import logging
 import os
 from dataclasses import dataclass
-from typing import Any, Optional, Self
+from typing import Any, Self
 
 import sentry_sdk
 
@@ -33,7 +33,7 @@ class Config:
     internal_token: str
     telegram_token: str
     wheel_token: str
-    sentry_dsn: Optional[str]
+    sentry_dsn: str | None
 
     @classmethod
     def from_env(cls) -> Self:
