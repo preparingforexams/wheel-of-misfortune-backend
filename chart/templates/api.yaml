@@ -50,7 +50,6 @@ spec:
             httpGet:
               port: http
               path: /probe/live
-
           livenessProbe:
             httpGet:
               port: http

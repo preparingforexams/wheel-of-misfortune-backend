@@ -269,7 +269,7 @@ async def connect_ws(websocket: WebSocket):
 
     async def __on_state(state: State) -> None:
         try:
-            await websocket.send_json(state)
+            await websocket.send_text(state.model_dump_json())
         except WebSocketDisconnect:
             _LOG.warning("Got disconnect during send")
 
@@ -281,6 +281,6 @@ async def connect_ws(websocket: WebSocket):
             atom.add_listener(on_state)
 
         async for message in websocket.iter_json():
-            _LOG.error("Received unexpected message: %s", message)
+            _LOG.warning("Received unexpected message: %s", message)
     finally:
         observable_state.remove_listener(on_state)
