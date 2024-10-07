@@ -66,3 +66,20 @@ def test_spin__success(client, spin_auth_factory):
     )
 
     assert response.status_code == HTTPStatus.NO_CONTENT
+
+
+def test_spin__twice_fails(client, spin_auth_factory):
+    auth = spin_auth_factory()
+    response = client.post(
+        "/spin",
+        auth=auth,
+        params=dict(speed=1.0),
+    )
+    assert response.status_code == HTTPStatus.NO_CONTENT
+
+    second_response = client.post(
+        "/spin",
+        auth=auth,
+        params=dict(speed=1.0),
+    )
+    assert second_response.status_code == HTTPStatus.CONFLICT
