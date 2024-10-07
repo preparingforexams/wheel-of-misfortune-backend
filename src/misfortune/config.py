@@ -1,5 +1,3 @@
-import base64
-import json
 import logging
 from dataclasses import dataclass
 from typing import Self
@@ -19,16 +17,8 @@ class Config:
     wheel_token: str
     sentry_dsn: str | None
 
-    @staticmethod
-    def _decode_gsa_key(key: str | None) -> dict | None:
-        if key is None:
-            return None
-
-        return json.loads(base64.standard_b64decode(key).decode("utf-8"))
-
     @classmethod
     def from_env(cls, env: Env) -> Self:
-        gsa_key = cls._decode_gsa_key(env.get_string("SERVICE_ACCOUNT_JSON"))
         return cls(
             api_url=env.get_string("API_URL", default="https://api.bembel.party"),
             app_version=env.get_string("APP_VERSION", default="dev"),
@@ -36,7 +26,7 @@ class Config:
                 "FIRESTORE_DRINKS_COLLECTION",
                 default="drinks",
             ),
-            google_service_account_key=gsa_key,
+            google_service_account_key=env.get_string("GSA_JSON"),
             internal_token=env.get_string("INTERNAL_TOKEN", required=True),
             sentry_dsn=env.get_string("SENTRY_DSN"),
             telegram_token=env.get_string("TELEGRAM_TOKEN", required=True),
