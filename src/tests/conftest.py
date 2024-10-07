@@ -10,7 +10,7 @@ _LOG = logging.getLogger(__name__)
 
 @pytest.fixture(scope="session", autouse=True)
 def manage_gsa_key():
-    encoded_json = os.getenv("SERVICE_ACCOUNT_JSON")
+    encoded_json = os.getenv("GSA_JSON")
     if not encoded_json:
         yield
     else:

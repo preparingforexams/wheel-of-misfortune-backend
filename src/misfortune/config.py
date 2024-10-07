@@ -11,7 +11,6 @@ class Config:
     api_url: str
     app_version: str
     drinks_collection: str
-    google_service_account_key: dict | None
     internal_token: str
     telegram_token: str
     wheel_token: str
@@ -26,7 +25,6 @@ class Config:
                 "FIRESTORE_DRINKS_COLLECTION",
                 default="drinks",
             ),
-            google_service_account_key=env.get_string("GSA_JSON"),
             internal_token=env.get_string("INTERNAL_TOKEN", required=True),
             sentry_dsn=env.get_string("SENTRY_DSN"),
             telegram_token=env.get_string("TELEGRAM_TOKEN", required=True),
