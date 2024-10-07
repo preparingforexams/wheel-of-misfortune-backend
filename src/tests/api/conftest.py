@@ -21,6 +21,6 @@ def client(config, mocker) -> TestClient:  # type: ignore
     mocker.patch("misfortune.config.init_config", return_value=config)
     from misfortune.api import app
 
-    client = TestClient(app)
+    client = TestClient(app, follow_redirects=False)
     yield client
     client.close()

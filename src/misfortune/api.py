@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from http import HTTPStatus
-from typing import Self
+from typing import Any, Self
 
 import pendulum
 from fastapi import Depends, FastAPI
@@ -117,17 +117,19 @@ app.add_middleware(
 
 
 @app.get("/", response_class=RedirectResponse)
-async def redirect_to_docs():
+async def redirect_to_docs() -> RedirectResponse:
     return RedirectResponse("/docs")
 
 
 @app.get("/probe/live")
-async def liveness_probe():
+async def liveness_probe() -> dict[str, Any]:
     return {"status": "ok"}
 
 
 @app.get("/state")
-async def get_state(token: HTTPAuthorizationCredentials = Depends(auth_token)) -> State:
+async def get_state(
+    token: HTTPAuthorizationCredentials = Depends(auth_token),
+) -> State:
     if token.credentials not in [
         config.internal_token,
         config.wheel_token,
@@ -138,7 +140,10 @@ async def get_state(token: HTTPAuthorizationCredentials = Depends(auth_token)) -
 
 
 @app.post("/spin", response_class=Response, status_code=204)
-async def spin(speed: float, token: HTTPAuthorizationCredentials = Depends(auth_token)):
+async def spin(
+    speed: float,
+    token: HTTPAuthorizationCredentials = Depends(auth_token),
+) -> None:
     async with observable_state.atomic() as atom:
         state: State = atom.value
         if token.credentials != state.code:
@@ -157,7 +162,9 @@ async def spin(speed: float, token: HTTPAuthorizationCredentials = Depends(auth_
 
 
 @app.put("/unlock", response_class=Response, status_code=204)
-async def unlock(token: HTTPAuthorizationCredentials = Depends(auth_token)):
+async def unlock(
+    token: HTTPAuthorizationCredentials = Depends(auth_token),
+) -> None:
     if token.credentials != config.wheel_token:
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
@@ -180,7 +187,7 @@ async def add_drink(
     name: str,
     client: firestore.AsyncClient = Depends(_client),
     token: HTTPAuthorizationCredentials = Depends(auth_token),
-):
+) -> None:
     if token.credentials != config.internal_token:
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
@@ -200,7 +207,7 @@ async def delete_drink(
     drink_id: str,
     client: firestore.AsyncClient = Depends(_client),
     token: HTTPAuthorizationCredentials = Depends(auth_token),
-):
+) -> None:
     if token.credentials != config.internal_token:
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
