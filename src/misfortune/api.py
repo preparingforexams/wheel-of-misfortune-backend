@@ -1,20 +1,21 @@
+import abc
+import asyncio
 import logging
 import random
 import secrets
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
-from http import HTTPStatus
 from typing import Any, Self
 
 import pendulum
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect, status
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from google.cloud import firestore
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from .config import init_config
 from .drink import Drink
@@ -26,13 +27,19 @@ _LOG = logging.getLogger(__name__)
 auth_token = HTTPBearer()
 
 
-class State(BaseModel):
+class MisfortuneModel(BaseModel, abc.ABC):
     model_config = ConfigDict(
         strict=True,
         frozen=True,
         extra="forbid",
     )
 
+
+class WebsocketAuth(MisfortuneModel):
+    token: str
+
+
+class State(MisfortuneModel):
     drinks: Sequence[Drink]
     code: str
     drinking_age: datetime | None = None
@@ -135,7 +142,7 @@ async def get_state(
         config.internal_token,
         config.wheel_token,
     ]:
-        raise HTTPException(HTTPStatus.FORBIDDEN)
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
 
     return observable_state.value
 
@@ -148,10 +155,10 @@ async def spin(
     async with observable_state.atomic() as atom:
         state: State = atom.value
         if token.credentials != state.code:
-            raise HTTPException(HTTPStatus.FORBIDDEN)
+            raise HTTPException(status.HTTP_403_FORBIDDEN)
 
         if state.is_locked:
-            raise HTTPException(HTTPStatus.CONFLICT)
+            raise HTTPException(status.HTTP_409_CONFLICT)
 
         await atom.update(
             state.replace(
@@ -167,7 +174,7 @@ async def unlock(
     token: HTTPAuthorizationCredentials = Depends(auth_token),
 ) -> None:
     if token.credentials != config.wheel_token:
-        raise HTTPException(HTTPStatus.FORBIDDEN)
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
 
     async with observable_state.atomic() as atom:
         state: State = atom.value
@@ -190,7 +197,7 @@ async def add_drink(
     token: HTTPAuthorizationCredentials = Depends(auth_token),
 ) -> None:
     if token.credentials != config.internal_token:
-        raise HTTPException(HTTPStatus.FORBIDDEN)
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
 
     async with observable_state.atomic() as atom:
         state: State = atom.value
@@ -214,7 +221,7 @@ async def delete_drink(
     token: HTTPAuthorizationCredentials = Depends(auth_token),
 ) -> None:
     if token.credentials != config.internal_token:
-        raise HTTPException(HTTPStatus.FORBIDDEN)
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
 
     if drink_id:
         await client.collection(config.drinks_collection).document(drink_id).delete()
@@ -230,12 +237,50 @@ async def delete_drink(
             await doc.reference.delete()
 
 
-#
-# @app.websocket("/ws")
-# async def connect_ws(websocket: WebSocket):
-#     await websocket.accept()
-#     try:
-#         await websocket.send_json({})
-#     finally:
-#         # TODO cleanup
-#         pass
+async def authenticate_websocket(websocket: WebSocket) -> bool:
+    try:
+        auth_message = WebsocketAuth.model_validate_json(
+            await asyncio.wait_for(websocket.receive_text(), timeout=10)
+        )
+
+        if auth_message.token == config.wheel_token:
+            return True
+
+        _LOG.error("Login attempt with invalid token")
+        await websocket.close(status.WS_1008_POLICY_VIOLATION)
+    except TimeoutError:
+        _LOG.warning("Client did not send auth message")
+        await websocket.close(status.WS_1008_POLICY_VIOLATION)
+    except ValidationError as e:
+        _LOG.warning("Invalid websocket auth message", exc_info=e)
+        await websocket.close(status.WS_1003_UNSUPPORTED_DATA)
+    except WebSocketDisconnect:
+        _LOG.warning("Disconnected ws before auth")
+        await websocket.close()
+
+    return False
+
+
+@app.websocket("/ws")
+async def connect_ws(websocket: WebSocket):
+    await websocket.accept()
+    if not await authenticate_websocket(websocket):
+        return
+
+    async def __on_state(state: State) -> None:
+        try:
+            await websocket.send_json(state)
+        except WebSocketDisconnect:
+            _LOG.warning("Got disconnect during send")
+
+    on_state = __on_state
+
+    try:
+        async with observable_state.atomic() as atom:
+            await on_state(atom.value)
+            atom.add_listener(on_state)
+
+        async for message in websocket.iter_json():
+            _LOG.error("Received unexpected message: %s", message)
+    finally:
+        observable_state.remove_listener(on_state)
