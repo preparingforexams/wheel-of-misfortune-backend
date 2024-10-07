@@ -1,9 +1,11 @@
 import logging
 import random
 import secrets
+from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from http import HTTPStatus
+from typing import Self
 
 import pendulum
 from fastapi import Depends, FastAPI
@@ -12,10 +14,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from google.cloud import firestore
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from .config import init_config
 from .drink import Drink
+from .observable import observable
 
 _LOG = logging.getLogger(__name__)
 
@@ -23,7 +26,13 @@ auth_token = HTTPBearer()
 
 
 class State(BaseModel):
-    drinks: list[Drink]
+    model_config = ConfigDict(
+        strict=True,
+        frozen=True,
+        extra="forbid",
+    )
+
+    drinks: Sequence[Drink]
     code: str
     drinking_age: datetime | None = None
     is_locked: bool = False
@@ -38,6 +47,9 @@ class State(BaseModel):
         now: datetime = pendulum.now()
         delta = now - drinking_age
         return delta > timedelta(minutes=1)
+
+    def replace(self, **kwargs) -> Self:
+        return self.model_validate(self.model_copy(update=kwargs))
 
 
 def generate_code() -> str:
@@ -61,9 +73,11 @@ async def _client():
         client.close()
 
 
-state = State(
-    drinks=[],
-    code=generate_code(),
+observable_state = observable(
+    State(
+        drinks=[],
+        code=generate_code(),
+    )
 )
 
 config = init_config()
@@ -73,7 +87,11 @@ config = init_config()
 async def lifespan(_):
     client = firestore.AsyncClient()
     try:
-        state.drinks = await fetch_drinks(client)
+        drinks = await fetch_drinks(client)
+        state = observable_state.value.replace(
+            drinks=drinks,
+        )
+        await observable_state.update(state)
     finally:
         client.close()
 
@@ -116,19 +134,26 @@ async def get_state(token: HTTPAuthorizationCredentials = Depends(auth_token)) -
     ]:
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
-    return state
+    return observable_state.value
 
 
 @app.post("/spin", response_class=Response, status_code=204)
 async def spin(speed: float, token: HTTPAuthorizationCredentials = Depends(auth_token)):
-    if token.credentials != state.code:
-        raise HTTPException(HTTPStatus.FORBIDDEN)
+    async with observable_state.atomic() as atom:
+        state: State = atom.value
+        if token.credentials != state.code:
+            raise HTTPException(HTTPStatus.FORBIDDEN)
 
-    if state.is_locked:
-        raise HTTPException(HTTPStatus.CONFLICT)
-    state.is_locked = True
-    state.speed = speed
-    state.current_drink = random.randrange(0, len(state.drinks))
+        if state.is_locked:
+            raise HTTPException(HTTPStatus.CONFLICT)
+
+        await atom.update(
+            state.replace(
+                is_locked=True,
+                speed=speed,
+                current_drink=random.randrange(0, len(state.drinks)),
+            )
+        )
 
 
 @app.put("/unlock", response_class=Response, status_code=204)
@@ -136,8 +161,18 @@ async def unlock(token: HTTPAuthorizationCredentials = Depends(auth_token)):
     if token.credentials != config.wheel_token:
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
-    state.is_locked = False
-    state.code = generate_code()
+    async with observable_state.atomic() as atom:
+        state: State = atom.value
+
+        if not state.is_locked:
+            return
+
+        await atom.update(
+            state.replace(
+                is_locked=False,
+                code=generate_code(),
+            )
+        )
 
 
 @app.post("/drink", response_class=Response, status_code=201)
@@ -149,10 +184,15 @@ async def add_drink(
     if token.credentials != config.internal_token:
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
-    if name not in (d.name for d in state.drinks):
-        drink = Drink.create(name)
-        await client.collection("drinks").document(drink.id).set(drink.to_dict())
-        state.drinks.append(drink)
+    async with observable_state.atomic() as atom:
+        state: State = atom.value
+
+        if name not in (d.name for d in state.drinks):
+            drink = Drink.create(name)
+            await client.collection("drinks").document(drink.id).set(drink.to_dict())
+            new_drinks = list(state.drinks)
+            new_drinks.append(drink)
+            await atom.update(state.replace(drinks=new_drinks))
 
 
 @app.delete("/drink", response_class=Response, status_code=201)
@@ -165,4 +205,20 @@ async def delete_drink(
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
     await client.collection("drinks").document(drink_id).delete()
-    state.drinks = [d for d in state.drinks if d.id != drink_id]
+    state = observable_state.value
+    await observable_state.update(
+        state.replace(
+            drinks=[d for d in state.drinks if d.id != drink_id],
+        )
+    )
+
+
+#
+# @app.websocket("/ws")
+# async def connect_ws(websocket: WebSocket):
+#     await websocket.accept()
+#     try:
+#         await websocket.send_json({})
+#     finally:
+#         # TODO cleanup
+#         pass
