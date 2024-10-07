@@ -12,6 +12,7 @@ _LOG = logging.getLogger(__name__)
 def manage_gsa_key():
     encoded_json = os.getenv("GSA_JSON")
     if not encoded_json:
+        _LOG.info("Did not find GSA_JSON env var, assuming implicit auth")
         yield
     else:
         _LOG.info("Setting up GSA json file")

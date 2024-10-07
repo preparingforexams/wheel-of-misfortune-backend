@@ -6,7 +6,7 @@ from tests.bearer_auth import BearerAuth
 
 
 @pytest.fixture(autouse=True)
-def init_drinks(client, internal_auth):
+def setup(client, internal_auth, wheel_auth):
     client.post(
         "/drink",
         auth=internal_auth,
@@ -15,11 +15,16 @@ def init_drinks(client, internal_auth):
     try:
         yield
     finally:
-        client.delete(
-            "/drink",
-            auth=internal_auth,
-            params=dict(drink_id=None),
-        ).raise_for_status()
+        responses = [
+            client.put("/unlock", auth=wheel_auth),
+            client.delete(
+                "/drink",
+                auth=internal_auth,
+                params=dict(drink_id=None),
+            ),
+        ]
+        for response in responses:
+            response.raise_for_status()
 
 
 @pytest.mark.xfail(reason="Bug in FastAPI")
