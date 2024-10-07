@@ -22,6 +22,7 @@ from .observable import observable
 
 _LOG = logging.getLogger(__name__)
 
+
 auth_token = HTTPBearer()
 
 
@@ -58,7 +59,7 @@ def generate_code() -> str:
 
 async def fetch_drinks(client: firestore.AsyncClient) -> list[Drink]:
     drinks = []
-    for doc in await client.collection("drinks").get():
+    for doc in await client.collection(config.drinks_collection).get():
         drink = Drink.from_dict(doc.to_dict())
         drinks.append(drink)
 
@@ -196,7 +197,11 @@ async def add_drink(
 
         if name not in (d.name for d in state.drinks):
             drink = Drink.create(name)
-            await client.collection("drinks").document(drink.id).set(drink.to_dict())
+            await (
+                client.collection(config.drinks_collection)
+                .document(drink.id)
+                .set(drink.to_dict())
+            )
             new_drinks = list(state.drinks)
             new_drinks.append(drink)
             await atom.update(state.replace(drinks=new_drinks))
@@ -204,20 +209,25 @@ async def add_drink(
 
 @app.delete("/drink", response_class=Response, status_code=201)
 async def delete_drink(
-    drink_id: str,
+    drink_id: str | None,
     client: firestore.AsyncClient = Depends(_client),
     token: HTTPAuthorizationCredentials = Depends(auth_token),
 ) -> None:
     if token.credentials != config.internal_token:
         raise HTTPException(HTTPStatus.FORBIDDEN)
 
-    await client.collection("drinks").document(drink_id).delete()
-    state = observable_state.value
-    await observable_state.update(
-        state.replace(
-            drinks=[d for d in state.drinks if d.id != drink_id],
+    if drink_id:
+        await client.collection(config.drinks_collection).document(drink_id).delete()
+        state = observable_state.value
+        await observable_state.update(
+            state.replace(
+                drinks=[d for d in state.drinks if d.id != drink_id],
+            )
         )
-    )
+    else:
+        _LOG.warning("Clearing all drinks")
+        async for doc in client.collection(config.drinks_collection).stream():
+            await doc.reference.delete()
 
 
 #

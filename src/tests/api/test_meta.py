@@ -1,3 +1,6 @@
+from http import HTTPStatus
+
+
 def test_docs_redirect(client):
     response = client.get("/")
     assert response.is_redirect
@@ -7,5 +10,5 @@ def test_docs_redirect(client):
 
 def test_probe_live__responds(client):
     response = client.get("/probe/live")
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert response.json() == {"status": "ok"}
