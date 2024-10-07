@@ -63,7 +63,7 @@ def test_spin__wheel_auth(client, internal_auth):
     assert response.status_code == HTTPStatus.FORBIDDEN
 
 
-def test_spin__success(client, spin_auth_factory):
+def test_spin__success(client, spin_auth_factory, internal_auth):
     response = client.post(
         "/spin",
         auth=spin_auth_factory(),
@@ -71,6 +71,11 @@ def test_spin__success(client, spin_auth_factory):
     )
 
     assert response.status_code == HTTPStatus.NO_CONTENT
+
+    state_response = client.get("/state", auth=internal_auth)
+    assert state_response.status_code == HTTPStatus.OK
+    body = state_response.json()
+    assert body["is_locked"]
 
 
 def test_spin__twice_fails(client, spin_auth_factory):
