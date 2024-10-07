@@ -31,8 +31,6 @@ spec:
           env:
             - name: API_URL
               value: http://api
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: /secret/sa.json
           envFrom:
             - secretRef:
                 name: tokens

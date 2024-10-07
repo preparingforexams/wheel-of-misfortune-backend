@@ -43,8 +43,6 @@ spec:
               value: /secret/sa.json
           envFrom:
             - secretRef:
-                name: gcp
-            - secretRef:
                 name: tokens
           startupProbe:
             failureThreshold: 16

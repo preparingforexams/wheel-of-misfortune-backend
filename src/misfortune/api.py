@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from google.cloud import firestore
+from google.oauth2.gdch_credentials import ServiceAccountCredentials
 from pydantic import BaseModel, ConfigDict
 
 from .config import init_config
@@ -67,7 +68,14 @@ async def fetch_drinks(client: firestore.AsyncClient) -> list[Drink]:
 
 
 async def _client():
-    client = firestore.AsyncClient()
+    credentials = (
+        None
+        if config.google_service_account_key is None
+        else ServiceAccountCredentials.from_service_account_info(
+            config.google_service_account_key
+        )
+    )
+    client = firestore.AsyncClient(credentials=credentials)
     try:
         yield client
     finally:

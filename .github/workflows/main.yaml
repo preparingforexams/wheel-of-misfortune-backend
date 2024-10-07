@@ -19,7 +19,7 @@ jobs:
       python-version: '3.12'
     secrets:
       ENVIRONMENT_VARIABLES: |
-        GOOGLE_CLOUD_PROJECT=bWlzZm9ydHVuZQ==
+        GOOGLE_CLOUD_PROJECT=misfortune
         SERVICE_ACCOUNT_JSON=${{ secrets.TEST_GSA_JSON_B64 }}
 
   build-container-image:

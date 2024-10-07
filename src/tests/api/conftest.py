@@ -14,8 +14,9 @@ def config() -> Config:
         api_url="",
         app_version="",
         drinks_collection="test_drinks",
+        google_service_account_key=None,
         internal_token="abc",
-        sentry_dsn="",
+        sentry_dsn=None,
         telegram_token="",
         wheel_token="def",
     )
