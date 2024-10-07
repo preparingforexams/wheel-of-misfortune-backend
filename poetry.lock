@@ -32,6 +32,28 @@ test = ["anyio[trio]", "coverage[toml] (>=7)", "exceptiongroup (>=1.2.0)", "hypo
 trio = ["trio (>=0.26.1)"]
 
 [[package]]
+name = "bs-config"
+version = "1.0.2"
+description = "Config"
+optional = false
+python-versions = ">=3.11,<3.13"
+files = [
+    {file = "bs_config-1.0.2-py3-none-any.whl", hash = "sha256:ff46170636fdbe4d8d1499bf42ad168fc6fc7acd47480ffd7baeca7d4568321b"},
+    {file = "bs_config-1.0.2.tar.gz", hash = "sha256:6f0c896487bc47b17547f39e6085b92dad4cd92a39d907140e27a8cc53289cb3"},
+]
+
+[package.dependencies]
+python-dotenv = {version = ">=1.0.0,<2.0.0", optional = true, markers = "extra == \"dotenv\""}
+
+[package.extras]
+dotenv = ["python-dotenv (>=1.0.0,<2.0.0)"]
+
+[package.source]
+type = "legacy"
+url = "https://pypi.bjoernpetersen.net"
+reference = "internal"
+
+[[package]]
 name = "cachetools"
 version = "5.5.0"
 description = "Extensible memoizing collections and decorators"
@@ -1130,6 +1152,20 @@ files = [
 six = ">=1.5"
 
 [[package]]
+name = "python-dotenv"
+version = "1.0.1"
+description = "Read key-value pairs from a .env file and set them as environment variables"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "python-dotenv-1.0.1.tar.gz", hash = "sha256:e324ee90a023d808f1959c46bcbc04446a10ced277783dc6ee09987c37ec10ca"},
+    {file = "python_dotenv-1.0.1-py3-none-any.whl", hash = "sha256:f7b63ef50f1b690dddf550d03497b66d609393b40b564ed0d674909a68ebf16a"},
+]
+
+[package.extras]
+cli = ["click (>=5.0)"]
+
+[[package]]
 name = "python-telegram-bot"
 version = "21.6"
 description = "We have made you a wrapper you can't refuse"
@@ -1469,4 +1505,4 @@ testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.12"
-content-hash = "4610eb145e2ed096bd81e17f3b5f434b202115ec5f518256c2e124bf0ffc0fbf"
+content-hash = "144629edb4d3bfbb139fb7d13641204c99085138d83072ba362abafb29de304c"

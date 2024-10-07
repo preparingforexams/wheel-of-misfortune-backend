@@ -7,7 +7,13 @@ version = "0.1.0"
 description = ""
 authors = ["Björn Petersen <git@bjoernpetersen.net>"]
 
+[[tool.poetry.source]]
+name = "internal"
+url = "https://pypi.bjoernpetersen.net"
+priority = "explicit"
+
 [tool.poetry.dependencies]
+bs-config = { version = "^1.0.0", extras = ["dotenv"], source = "internal" }
 fastapi = "^0.115.0"
 google-cloud-firestore = "^2.5.2"
 httpx = "*"
