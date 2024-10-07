@@ -4,6 +4,7 @@ from typing import cast
 
 import httpx
 import telegram
+from bs_config import Env
 from more_itertools import chunked
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update, User
 from telegram.ext import (
@@ -156,7 +157,8 @@ class MisfortuneBot:
 
 
 def run():
-    config = Config.from_env()
+    env = Env.load(include_default_dotenv=True)
+    config = Config.from_env(env)
     config.basic_setup()
     app = (
         Application.builder()
