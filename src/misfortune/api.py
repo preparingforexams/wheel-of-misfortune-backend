@@ -251,8 +251,8 @@ async def authenticate_websocket(websocket: WebSocket) -> bool:
     except TimeoutError:
         _LOG.warning("Client did not send auth message")
         await websocket.close(status.WS_1008_POLICY_VIOLATION)
-    except ValidationError as e:
-        _LOG.warning("Invalid websocket auth message", exc_info=e)
+    except ValidationError:
+        _LOG.warning("Invalid websocket auth message")
         await websocket.close(status.WS_1003_UNSUPPORTED_DATA)
     except WebSocketDisconnect:
         _LOG.warning("Disconnected ws before auth")
