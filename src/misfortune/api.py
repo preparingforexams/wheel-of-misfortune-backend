@@ -284,3 +284,4 @@ async def connect_ws(websocket: WebSocket):
             _LOG.warning("Received unexpected message: %s", message)
     finally:
         observable_state.remove_listener(on_state)
+        _LOG.info("Ended websocket connection")
