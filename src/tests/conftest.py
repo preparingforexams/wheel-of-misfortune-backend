@@ -17,7 +17,8 @@ def manage_gsa_key():
     else:
         _LOG.info("Setting up GSA json file")
         decoded_json = base64.standard_b64decode(encoded_json)
-        with tempfile.NamedTemporaryFile(mode="wb+") as temp:
+        with tempfile.NamedTemporaryFile(mode="wb+", delete_on_close=False) as temp:
             temp.write(decoded_json)
+            temp.close()
             os.putenv("GOOGLE_APPLICATION_CREDENTIALS", temp.name)
             yield
