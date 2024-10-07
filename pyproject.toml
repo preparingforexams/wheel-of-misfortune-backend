@@ -18,6 +18,7 @@ python = "~3.12"
 python-telegram-bot = "21.6"
 sentry-sdk = "^2.0.0"
 uvicorn = "^0.31.0"
+websocket = "^0.2.1"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "~1.11"
@@ -35,7 +36,8 @@ filterwarnings = [
 ]
 
 [tool.mypy]
-plugins = [ "pydantic.mypy" ]
+plugins = ["pydantic.mypy"]
+enable_incomplete_feature = ["NewGenericSyntax"]
 
 [[tool.mypy.overrides]]
 module = "asyncache"
