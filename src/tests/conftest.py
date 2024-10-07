@@ -20,5 +20,5 @@ def manage_gsa_key():
         with tempfile.NamedTemporaryFile(mode="wb+", delete_on_close=False) as temp:
             temp.write(decoded_json)
             temp.close()
-            os.putenv("GOOGLE_APPLICATION_CREDENTIALS", temp.name)
+            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp.name
             yield
