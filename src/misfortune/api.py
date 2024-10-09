@@ -255,15 +255,20 @@ async def create_wheel(
 
 
 @app.get("/user/{user_id}/wheel/{wheel_id}")
-async def get_wheel_state(
+async def get_wheel(
     user_id: int,
     wheel_id: uuid.UUID,
     token: HTTPAuthorizationCredentials = Depends(auth_token),
-) -> State:
+) -> TelegramWheel:
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
 
-    return _verify_access(user=user_id, wheel=wheel_id).value
+    state = _verify_access(user=user_id, wheel=wheel_id).value
+    return TelegramWheel(
+        name=state.wheel_name,
+        id=wheel_id,
+        is_owned=state.owner == user_id,
+    )
 
 
 @app.patch("/user/{user_id}/wheel/{wheel_id}/name")
