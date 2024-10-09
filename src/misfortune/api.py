@@ -413,7 +413,7 @@ async def add_drink(
             await (
                 client.collection(config.firestore.wheels)
                 .document(str(wheel_id))
-                .update(dict(drinks=[new_drinks]))
+                .update(dict(drinks=new_drinks))
             )
             await atom.update(state.replace(drinks=new_drinks))
 

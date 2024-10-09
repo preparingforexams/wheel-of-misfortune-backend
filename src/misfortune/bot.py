@@ -418,7 +418,8 @@ class MisfortuneBot:
         pending_id = state.pending_registration_id
         if pending_id is None:
             await user.send_message(
-                "Entschuldige, es ist kein Verbindungsvorgang vorgemerkt. Versuch's noch mal."
+                "Entschuldige, es ist kein Verbindungsvorgang vorgemerkt."
+                " Versuch's noch mal."
             )
             return
 
