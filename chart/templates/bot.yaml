@@ -21,6 +21,13 @@ spec:
       labels:
         app: bot
     spec:
+      volumes:
+        - name: gcp
+          secret:
+            items:
+              - key: SERVICE_ACCOUNT_JSON
+                path: sa.json
+            secretName: gcp
       containers:
         - name: bot
           image: "{{ .Values.image }}:{{ .Values.appVersion }}"
@@ -31,6 +38,11 @@ spec:
           env:
             - name: API_URL
               value: http://api
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /secret/sa.json
           envFrom:
             - secretRef:
                 name: tokens
+          volumeMounts:
+            - mountPath: /secret
+              name: gcp
