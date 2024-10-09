@@ -1,6 +1,7 @@
 import base64
 import logging
 import signal
+from collections.abc import Sequence
 from typing import Self, cast
 from uuid import UUID
 
@@ -34,6 +35,7 @@ from misfortune.shared_model import (
     MisfortuneModel,
     TelegramWheel,
     TelegramWheels,
+    TelegramWheelState,
 )
 
 _LOG = logging.getLogger(__name__)
@@ -363,13 +365,14 @@ class MisfortuneBot:
     ) -> InlineKeyboardMarkup | None:
         response = await self._api.get(f"/user/{user_id}/wheel/{wheel_id}")
         response.raise_for_status()
-        drinks = response.json()["drinks"]
+        wheel_state = TelegramWheelState.model_validate_json(response.content)
+        drinks = wheel_state.drinks
         if not drinks:
             return None
         return InlineKeyboardMarkup(self._build_buttons(drinks))
 
     @staticmethod
-    def _build_buttons(drinks: list[str]) -> list[list[InlineKeyboardButton]]:
+    def _build_buttons(drinks: Sequence[str]) -> list[list[InlineKeyboardButton]]:
         return list(
             chunked(
                 [
@@ -536,7 +539,8 @@ class MisfortuneBot:
             return
 
         state = self._load_user_state(user.id)
-        state.active_wheel = TelegramWheel.model_validate_json(response.content)
+        wheel_state = TelegramWheelState.model_validate_json(response.content)
+        state.active_wheel = wheel_state.wheel
         await self._update_user_state(user.id, state)
         await self._ensure_drinks_message(user, state)
 

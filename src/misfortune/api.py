@@ -26,6 +26,7 @@ from .shared_model import (
     MisfortuneModel,
     TelegramWheel,
     TelegramWheels,
+    TelegramWheelState,
 )
 
 _LOG = logging.getLogger(__name__)
@@ -255,19 +256,22 @@ async def create_wheel(
 
 
 @app.get("/user/{user_id}/wheel/{wheel_id}")
-async def get_wheel(
+async def get_wheel_state(
     user_id: int,
     wheel_id: uuid.UUID,
     token: HTTPAuthorizationCredentials = Depends(auth_token),
-) -> TelegramWheel:
+) -> TelegramWheelState:
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
 
     state = _verify_access(user=user_id, wheel=wheel_id).value
-    return TelegramWheel(
-        name=state.wheel_name,
-        id=wheel_id,
-        is_owned=state.owner == user_id,
+    return TelegramWheelState(
+        wheel=TelegramWheel(
+            name=state.wheel_name,
+            id=wheel_id,
+            is_owned=state.owner == user_id,
+        ),
+        drinks=state.drinks,
     )
 
 

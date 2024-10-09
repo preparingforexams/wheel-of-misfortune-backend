@@ -1,5 +1,6 @@
 import abc
 import uuid
+from collections.abc import Sequence
 
 from pydantic import BaseModel, ConfigDict
 
@@ -18,4 +19,9 @@ class TelegramWheel(MisfortuneModel):
 
 
 class TelegramWheels(MisfortuneModel):
-    wheels: list[TelegramWheel]
+    wheels: Sequence[TelegramWheel]
+
+
+class TelegramWheelState(MisfortuneModel):
+    wheel: TelegramWheel
+    drinks: Sequence[str]
