@@ -24,7 +24,6 @@ from .config import init_config
 from .observable import Observable, observable
 from .shared_model import (
     MisfortuneModel,
-    TelegramNewWheel,
     TelegramWheel,
     TelegramWheels,
 )
@@ -225,7 +224,7 @@ async def list_wheels(
 )
 async def create_wheel(
     user_id: int,
-    new_wheel: TelegramNewWheel,
+    name: str,
     token: HTTPAuthorizationCredentials = Depends(auth_token),
     client: firestore.AsyncClient = Depends(_client),
 ) -> TelegramWheel:
@@ -240,7 +239,7 @@ async def create_wheel(
 
     wheel = Wheel.create(
         owner=user_id,
-        name=new_wheel.name,
+        name=name,
     )
     await (
         client.collection(config.firestore.wheels)

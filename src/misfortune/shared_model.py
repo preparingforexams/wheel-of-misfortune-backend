@@ -12,10 +12,6 @@ class MisfortuneModel(BaseModel, abc.ABC):
     )
 
 
-class TelegramNewWheel(MisfortuneModel):
-    name: str
-
-
 class TelegramWheel(MisfortuneModel):
     name: str
     id: uuid.UUID

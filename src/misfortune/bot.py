@@ -32,7 +32,6 @@ from telegram.ext import (
 from misfortune.config import Config, FirestoreConfig, init_config
 from misfortune.shared_model import (
     MisfortuneModel,
-    TelegramNewWheel,
     TelegramWheel,
     TelegramWheels,
 )
@@ -478,10 +477,9 @@ class MisfortuneBot:
         wheel = state.active_wheel
         if wheel is None:
             # Creating a new wheel
-            new_wheel = TelegramNewWheel(name=text)
             wheel_response = await self._api.post(
                 f"/user/{user.id}/wheel",
-                json=new_wheel.model_dump_json(),
+                params=dict(name=text.strip()),
             )
             if not wheel_response.is_success:
                 await message.reply_text(
