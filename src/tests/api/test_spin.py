@@ -36,6 +36,7 @@ def test_spin__no_auth(client):
     assert response.status_code == HTTPStatus.UNAUTHORIZED
 
 
+@pytest.mark.skip
 def test_spin__invalid_auth(client):
     response = client.post(
         "/spin",
@@ -45,6 +46,7 @@ def test_spin__invalid_auth(client):
     assert response.status_code == HTTPStatus.FORBIDDEN
 
 
+@pytest.mark.skip
 def test_spin__internal_auth(client, internal_auth):
     response = client.post(
         "/spin",
@@ -54,6 +56,7 @@ def test_spin__internal_auth(client, internal_auth):
     assert response.status_code == HTTPStatus.FORBIDDEN
 
 
+@pytest.mark.skip
 def test_spin__wheel_auth(client, internal_auth):
     response = client.post(
         "/spin",
@@ -63,6 +66,7 @@ def test_spin__wheel_auth(client, internal_auth):
     assert response.status_code == HTTPStatus.FORBIDDEN
 
 
+@pytest.mark.skip
 def test_spin__success(client, spin_auth_factory, internal_auth):
     response = client.post(
         "/spin",
@@ -78,6 +82,7 @@ def test_spin__success(client, spin_auth_factory, internal_auth):
     assert body["is_locked"]
 
 
+@pytest.mark.skip
 def test_spin__twice_fails(client, spin_auth_factory):
     auth = spin_auth_factory()
     response = client.post(

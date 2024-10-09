@@ -7,13 +7,34 @@ from bs_config import Env
 
 
 @dataclass
+class FirestoreConfig:
+    user_states: str
+    wheels: str
+
+    @classmethod
+    def from_env(cls, env: Env) -> Self:
+        return cls(
+            user_states=env.get_string(
+                "FIRESTORE_USER_STATES_COLLECTION",
+                default="active_user_wheel",
+            ),
+            wheels=env.get_string(
+                "FIRESTORE_WHEELS_COLLECTION",
+                default="wheels",
+            ),
+        )
+
+
+@dataclass
 class Config:
     api_url: str
     app_version: str
-    drinks_collection: str
+    firestore: FirestoreConfig
     internal_token: str
+    jwt_secret: str
+    max_user_wheels: int
     telegram_token: str
-    wheel_token: str
+    telegram_bot_name: str
     sentry_dsn: str | None
 
     @classmethod
@@ -21,14 +42,16 @@ class Config:
         return cls(
             api_url=env.get_string("API_URL", default="https://api.bembel.party"),
             app_version=env.get_string("APP_VERSION", default="dev"),
-            drinks_collection=env.get_string(
-                "FIRESTORE_DRINKS_COLLECTION",
-                default="drinks",
-            ),
+            firestore=FirestoreConfig.from_env(env),
             internal_token=env.get_string("INTERNAL_TOKEN", required=True),
+            jwt_secret=env.get_string("JWT_SECRET", required=True),
+            max_user_wheels=env.get_int("MAX_USER_WHEELS", default=3),
             sentry_dsn=env.get_string("SENTRY_DSN"),
+            telegram_bot_name=env.get_string(
+                "TELEGRAM_BOT_NAME",
+                default="misfortune_bot",
+            ),
             telegram_token=env.get_string("TELEGRAM_TOKEN", required=True),
-            wheel_token=env.get_string("WHEEL_TOKEN", required=True),
         )
 
     def basic_setup(self) -> None:

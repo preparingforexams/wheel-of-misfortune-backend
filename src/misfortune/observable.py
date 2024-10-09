@@ -35,12 +35,12 @@ class Observable[T](abc.ABC):
         pass
 
 
-def observable[T](value: T) -> Observable[T]:
+def observable[T](value: T | None) -> Observable[T]:
     return _ObservableImpl(value)
 
 
 class _ObservableImpl[T](Observable[T]):
-    def __init__(self, value: T):
+    def __init__(self, value: T | None):
         self._update_lock = asyncio.Lock()
         self._unsafe = _UnsafeObservableImpl(value)
 
@@ -65,7 +65,7 @@ class _ObservableImpl[T](Observable[T]):
 
 
 class _UnsafeObservableImpl[T](Observable[T]):
-    def __init__(self, value: T):
+    def __init__(self, value: T | None):
         self._value = value
 
         self._listeners: list[Listener[T]] = []
@@ -73,7 +73,10 @@ class _UnsafeObservableImpl[T](Observable[T]):
 
     @property
     def value(self) -> T:
-        return self._value
+        if value := self._value:
+            return value
+
+        raise ValueError("No initial value set")
 
     @staticmethod
     async def _notify(listener: Listener[T], value: T) -> None:

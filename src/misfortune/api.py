@@ -1,13 +1,15 @@
-import abc
 import asyncio
+import base64
 import logging
 import random
 import secrets
+import uuid
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, Self
 
+import jwt
 import pendulum
 from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect, status
 from fastapi.exceptions import HTTPException
@@ -15,37 +17,87 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from google.cloud import firestore
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import ValidationError
+from pydantic_core import Url
 
 from .config import init_config
-from .drink import Drink
-from .observable import observable
+from .observable import Observable, observable
+from .shared_model import (
+    MisfortuneModel,
+    TelegramNewWheel,
+    TelegramWheel,
+    TelegramWheels,
+)
 
 _LOG = logging.getLogger(__name__)
-
 
 auth_token = HTTPBearer()
 
 
-class MisfortuneModel(BaseModel, abc.ABC):
-    model_config = ConfigDict(
-        strict=True,
-        frozen=True,
-        extra="forbid",
-    )
+class Wheel(MisfortuneModel):
+    id: uuid.UUID
+    name: str
+    owner: int
+    drinks: list[str]
+
+    @classmethod
+    def create(cls, owner: int, name: str) -> Self:
+        return cls(
+            name=name,
+            owner=owner,
+            id=uuid.uuid4(),
+            drinks=[],
+        )
 
 
-class WebsocketAuth(MisfortuneModel):
+class WheelLogin(MisfortuneModel):
+    token: str | None
+
+
+class WheelRegistrationInfo(MisfortuneModel):
+    registration_id: uuid.UUID
+    telegram_url: Url
+
+    @classmethod
+    def create(cls, registration_id: uuid.UUID) -> Self:
+        bot_name = config.telegram_bot_name
+        encoded_id = base64.urlsafe_b64encode(registration_id.bytes).decode()
+        return cls(
+            registration_id=registration_id,
+            telegram_url=Url.build(
+                scheme="https",
+                host="t.me",
+                path=f"/{bot_name}",
+                query=f"start={encoded_id}",
+            ),
+        )
+
+
+class WheelCredentials(MisfortuneModel):
     token: str
 
 
 class State(MisfortuneModel):
-    drinks: Sequence[Drink]
+    drinks: Sequence[str]
+    wheel_name: str
     code: str
+    owner: int
     drinking_age: datetime | None = None
     is_locked: bool = False
     current_drink: int = 0
     speed: float = 0.0
+
+    @classmethod
+    def initial(cls, wheel: Wheel) -> Self:
+        return cls(
+            drinks=wheel.drinks,
+            wheel_name=wheel.name,
+            code=generate_code(),
+            owner=wheel.owner,
+        )
+
+    def is_accessible(self, user_id: int) -> bool:
+        return user_id == self.owner
 
     def is_old(self) -> bool:
         drinking_age = self.drinking_age
@@ -64,13 +116,13 @@ def generate_code() -> str:
     return secrets.token_urlsafe(16)
 
 
-async def fetch_drinks(client: firestore.AsyncClient) -> list[Drink]:
-    drinks = []
-    for doc in await client.collection(config.drinks_collection).get():
-        drink = Drink.from_dict(doc.to_dict())
-        drinks.append(drink)
+async def fetch_wheels(client: firestore.AsyncClient) -> list[Wheel]:
+    wheels = []
+    for doc in await client.collection(config.firestore.wheels).get():
+        wheel = Wheel.model_validate(doc.to_dict())
+        wheels.append(wheel)
 
-    return drinks
+    return wheels
 
 
 async def _client():
@@ -81,12 +133,8 @@ async def _client():
         client.close()
 
 
-observable_state = observable(
-    State(
-        drinks=[],
-        code=generate_code(),
-    )
-)
+pending_wheel_clients: dict[uuid.UUID, Observable[uuid.UUID]] = {}
+observable_states: dict[uuid.UUID, Observable[State]] = {}
 
 config = init_config()
 
@@ -95,11 +143,9 @@ config = init_config()
 async def lifespan(_):
     client = firestore.AsyncClient()
     try:
-        drinks = await fetch_drinks(client)
-        state = observable_state.value.replace(
-            drinks=drinks,
-        )
-        await observable_state.update(state)
+        wheels = await fetch_wheels(client)
+        for wheel in wheels:
+            observable_states[wheel.id] = observable(State.initial(wheel))
     finally:
         client.close()
 
@@ -115,7 +161,6 @@ app.add_middleware(
     allow_origins=[
         "https://bembel.party",
         "https://wheel.bembel.party",
-        "http://localhost",
         "http://localhost:8080",
     ],
     allow_credentials=True,
@@ -134,24 +179,166 @@ async def liveness_probe() -> dict[str, Any]:
     return {"status": "ok"}
 
 
-@app.get("/state")
-async def get_state(
-    token: HTTPAuthorizationCredentials = Depends(auth_token),
-) -> State:
-    if token.credentials not in [
-        config.internal_token,
-        config.wheel_token,
-    ]:
+def _verify_access(
+    *,
+    user: int,
+    wheel: uuid.UUID,
+    require_owner: bool = False,
+) -> Observable[State]:
+    state = observable_states.get(wheel)
+    if state is None:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
 
-    return observable_state.value
+    if require_owner and state.value.owner != user:
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
+
+    if not require_owner and not state.value.is_accessible(user):
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
+
+    return state
 
 
-@app.post("/spin", response_class=Response, status_code=204)
+@app.get("/user/{user_id}/wheel")
+async def list_wheels(
+    user_id: int,
+    token: HTTPAuthorizationCredentials = Depends(auth_token),
+) -> TelegramWheels:
+    if token.credentials != config.internal_token:
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
+
+    return TelegramWheels(
+        wheels=[
+            TelegramWheel(
+                id=wheel_id,
+                name=state.value.wheel_name,
+                is_owned=state.value.owner == user_id,
+            )
+            for wheel_id, state in observable_states.items()
+            if state.value.is_accessible(user_id)
+        ],
+    )
+
+
+@app.post(
+    "/user/{user_id}/wheel",
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_wheel(
+    user_id: int,
+    new_wheel: TelegramNewWheel,
+    token: HTTPAuthorizationCredentials = Depends(auth_token),
+    client: firestore.AsyncClient = Depends(_client),
+) -> TelegramWheel:
+    if token.credentials != config.internal_token:
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
+
+    owned_wheels = sum(
+        1 for state in observable_states.values() if state.value.owner == user_id
+    )
+    if owned_wheels >= config.max_user_wheels:
+        raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED)
+
+    wheel = Wheel.create(
+        owner=user_id,
+        name=new_wheel.name,
+    )
+    await (
+        client.collection(config.firestore.wheels)
+        .document(str(wheel.id))
+        .create(wheel.model_dump(mode="json"))
+    )
+    observable_states[wheel.id] = observable(State.initial(wheel))
+    return TelegramWheel(
+        id=wheel.id,
+        name=wheel.name,
+        is_owned=True,
+    )
+
+
+@app.get("/user/{user_id}/wheel/{wheel_id}")
+async def get_wheel_state(
+    user_id: int,
+    wheel_id: uuid.UUID,
+    token: HTTPAuthorizationCredentials = Depends(auth_token),
+) -> State:
+    if token.credentials != config.internal_token:
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
+
+    return _verify_access(user=user_id, wheel=wheel_id).value
+
+
+@app.patch("/user/{user_id}/wheel/{wheel_id}/name")
+async def update_wheel_name(
+    user_id: int,
+    wheel_id: uuid.UUID,
+    name: str,
+    token: HTTPAuthorizationCredentials = Depends(auth_token),
+    client: firestore.AsyncClient = Depends(_client),
+) -> TelegramWheel:
+    if token.credentials != config.internal_token:
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
+
+    state = _verify_access(user=user_id, wheel=wheel_id, require_owner=True)
+    await (
+        client.collection(config.firestore.wheels)
+        .document(str(wheel_id))
+        .update(
+            dict(name=name),
+        )
+    )
+    await state.update(state.value.replace(wheel_name=name))
+    return TelegramWheel(name=name, id=wheel_id, is_owned=True)
+
+
+@app.post(
+    "/user/{user_id}/wheel/{wheel_id}/registration",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+)
+async def add_client_registration(
+    user_id: int,
+    wheel_id: uuid.UUID,
+    registration_id: uuid.UUID,
+    token: HTTPAuthorizationCredentials = Depends(auth_token),
+) -> None:
+    if token.credentials != config.internal_token:
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
+
+    _verify_access(user=user_id, wheel=wheel_id)
+    client_wheel = pending_wheel_clients.get(registration_id)
+    if client_wheel is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
+
+    await client_wheel.update(wheel_id)
+
+
+@app.delete(
+    "/user/{user_id}/wheel/{wheel_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+)
+async def delete_wheel(
+    user_id: int,
+    wheel_id: uuid.UUID,
+    token: HTTPAuthorizationCredentials = Depends(auth_token),
+    client: firestore.AsyncClient = Depends(_client),
+) -> None:
+    if token.credentials != config.internal_token:
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
+
+    _verify_access(user=user_id, wheel=wheel_id, require_owner=True)
+    await client.collection(config.firestore.wheels).document(str(wheel_id)).delete()
+    del observable_states[wheel_id]
+
+
+@app.post("/wheel/{wheel_id}/is_locked", response_class=Response, status_code=204)
 async def spin(
+    wheel_id: uuid.UUID,
     speed: float,
     token: HTTPAuthorizationCredentials = Depends(auth_token),
 ) -> None:
+    observable_state = observable_states[wheel_id]
+
     async with observable_state.atomic() as atom:
         state: State = atom.value
         if token.credentials != state.code:
@@ -169,14 +356,25 @@ async def spin(
         )
 
 
-@app.put("/unlock", response_class=Response, status_code=204)
+def _decode_wheel_token(token: str) -> uuid.UUID:
+    payload = jwt.decode(token, config.jwt_secret, algorithms=["HS256"])
+    return uuid.UUID(payload["wheelId"])
+
+
+@app.delete(
+    "/wheel/is_locked",
+    response_class=Response,
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 async def unlock(
     token: HTTPAuthorizationCredentials = Depends(auth_token),
 ) -> None:
-    if token.credentials != config.wheel_token:
+    try:
+        wheel_id = _decode_wheel_token(token.credentials)
+    except ValidationError:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
 
-    async with observable_state.atomic() as atom:
+    async with observable_states[wheel_id].atomic() as atom:
         state: State = atom.value
 
         if not state.is_locked:
@@ -190,8 +388,45 @@ async def unlock(
         )
 
 
-@app.post("/drink", response_class=Response, status_code=201)
+@app.post(
+    "/user/{user_id}/wheel/{wheel_id}/drink",
+    response_class=Response,
+    status_code=status.HTTP_201_CREATED,
+)
 async def add_drink(
+    user_id: int,
+    wheel_id: uuid.UUID,
+    name: str,
+    token: HTTPAuthorizationCredentials = Depends(auth_token),
+    client: firestore.AsyncClient = Depends(_client),
+) -> None:
+    if token.credentials != config.internal_token:
+        raise HTTPException(status.HTTP_403_FORBIDDEN)
+
+    observable_state = _verify_access(user=user_id, wheel=wheel_id)
+
+    async with observable_state.atomic() as atom:
+        state: State = atom.value
+
+        if name not in state.drinks:
+            new_drinks = list(state.drinks)
+            new_drinks.append(name)
+            await (
+                client.collection(config.firestore.wheels)
+                .document(str(wheel_id))
+                .update(dict(drinks=[new_drinks]))
+            )
+            await atom.update(state.replace(drinks=new_drinks))
+
+
+@app.delete(
+    "/user/{user_id}/wheel/{wheel_id}/drink",
+    response_class=Response,
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_drink(
+    user_id: int,
+    wheel_id: uuid.UUID,
     name: str,
     client: firestore.AsyncClient = Depends(_client),
     token: HTTPAuthorizationCredentials = Depends(auth_token),
@@ -199,53 +434,65 @@ async def add_drink(
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
 
+    observable_state = _verify_access(user=user_id, wheel=wheel_id)
+
     async with observable_state.atomic() as atom:
-        state: State = atom.value
-
-        if name not in (d.name for d in state.drinks):
-            drink = Drink.create(name)
-            await (
-                client.collection(config.drinks_collection)
-                .document(drink.id)
-                .set(drink.to_dict())
-            )
-            new_drinks = list(state.drinks)
-            new_drinks.append(drink)
-            await atom.update(state.replace(drinks=new_drinks))
-
-
-@app.delete("/drink", response_class=Response, status_code=201)
-async def delete_drink(
-    drink_id: str | None,
-    client: firestore.AsyncClient = Depends(_client),
-    token: HTTPAuthorizationCredentials = Depends(auth_token),
-) -> None:
-    if token.credentials != config.internal_token:
-        raise HTTPException(status.HTTP_403_FORBIDDEN)
-
-    if drink_id:
-        await client.collection(config.drinks_collection).document(drink_id).delete()
-        state = observable_state.value
-        await observable_state.update(
-            state.replace(
-                drinks=[d for d in state.drinks if d.id != drink_id],
-            )
+        state = atom.value
+        drinks = [drink for drink in state.drinks if drink != name]
+        await (
+            client.collection(config.firestore.wheels)
+            .document(str(wheel_id))
+            .update(dict(drinks=drinks))
         )
-    else:
-        _LOG.warning("Clearing all drinks")
-        async for doc in client.collection(config.drinks_collection).stream():
-            await doc.reference.delete()
+        await atom.update(state.replace(drinks=drinks))
 
 
-async def authenticate_websocket(websocket: WebSocket) -> bool:
+async def register_wheel_client(websocket: WebSocket) -> uuid.UUID:
+    registration_id = uuid.uuid4()
+    observable_wheel_id: Observable[uuid.UUID] = observable(None)
+
+    confirmation = asyncio.Event()
+
+    async def __on_confirm(wheel_id: uuid.UUID) -> None:
+        token = jwt.encode(
+            {
+                "exp": datetime.now(tz=UTC) + timedelta(days=1),
+                "wheelId": str(wheel_id),
+            },
+            key=config.jwt_secret,
+            algorithm="HS256",
+        )
+        await websocket.send_text(WheelCredentials(token=token).model_dump_json())
+        confirmation.set()
+
+    observable_wheel_id.add_listener(__on_confirm)
+    pending_wheel_clients[registration_id] = observable_wheel_id
+
     try:
-        auth_message = WebsocketAuth.model_validate_json(
+        await websocket.send_text(
+            WheelRegistrationInfo.create(registration_id).model_dump_json(),
+        )
+        await asyncio.wait_for(
+            confirmation.wait(),
+            timedelta(minutes=20).total_seconds(),
+        )
+    finally:
+        del pending_wheel_clients[registration_id]
+
+    return observable_wheel_id.value
+
+
+async def authenticate_wheel_client(websocket: WebSocket) -> uuid.UUID | None:
+    try:
+        login = WheelLogin.model_validate_json(
             await asyncio.wait_for(websocket.receive_text(), timeout=10)
         )
 
-        if auth_message.token == config.wheel_token:
-            return True
+        if token := login.token:
+            return _decode_wheel_token(token)
 
+        return await register_wheel_client(websocket)
+    except jwt.InvalidTokenError:
         _LOG.error("Login attempt with invalid token")
         await websocket.close(status.WS_1008_POLICY_VIOLATION)
     except TimeoutError:
@@ -258,14 +505,18 @@ async def authenticate_websocket(websocket: WebSocket) -> bool:
         _LOG.warning("Disconnected ws before auth")
         await websocket.close()
 
-    return False
+    return None
 
 
 @app.websocket("/ws")
 async def connect_ws(websocket: WebSocket):
     await websocket.accept()
-    if not await authenticate_websocket(websocket):
+
+    wheel_id = await authenticate_wheel_client(websocket)
+    if not wheel_id:
         return
+
+    observable_state = observable_states[wheel_id]
 
     async def __on_state(state: State) -> None:
         try:

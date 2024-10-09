@@ -1,10 +1,11 @@
 from collections.abc import Callable
+from uuid import UUID
 
 import httpx
 from fastapi.testclient import TestClient
 from pytest import fixture
 
-from misfortune.config import Config
+from misfortune.config import Config, FirestoreConfig
 from tests.bearer_auth import BearerAuth
 
 
@@ -13,11 +14,16 @@ def config() -> Config:
     return Config(
         api_url="",
         app_version="",
-        drinks_collection="test_drinks",
+        firestore=FirestoreConfig(
+            user_states="test_users",
+            wheels="test_wheels",
+        ),
+        jwt_secret="test",
+        max_user_wheels=3,
         internal_token="abc",
         sentry_dsn=None,
+        telegram_bot_name="localpheasntestbot",
         telegram_token="",
-        wheel_token="def",
     )
 
 
@@ -32,11 +38,6 @@ def client(config, mocker) -> TestClient:  # type: ignore
 
 
 @fixture
-def wheel_auth(config) -> httpx.Auth:
-    return BearerAuth(token=config.wheel_token)
-
-
-@fixture
 def internal_auth(config) -> httpx.Auth:
     return BearerAuth(token=config.internal_token)
 
@@ -44,7 +45,9 @@ def internal_auth(config) -> httpx.Auth:
 @fixture
 def spin_auth_factory() -> Callable[[], httpx.Auth]:
     def _generate() -> httpx.Auth:
-        from misfortune.api import observable_state
+        from misfortune.api import observable_states
+
+        observable_state = observable_states[UUID(int=0)]
 
         state = observable_state.value
         return BearerAuth(token=state.code)
