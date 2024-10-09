@@ -6,7 +6,6 @@ from pydantic import BaseModel, ConfigDict
 
 class MisfortuneModel(BaseModel, abc.ABC):
     model_config = ConfigDict(
-        strict=True,
         frozen=True,
         extra="forbid",
     )
