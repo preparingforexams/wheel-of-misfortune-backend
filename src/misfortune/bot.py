@@ -343,6 +343,15 @@ class MisfortuneBot:
             disable_notification=True,
         )
 
+    async def _refresh_drinks(self, user: User, state: UserState) -> None:
+        if message_id := state.drinks_message:
+            try:
+                await user.delete_message(message_id=message_id)
+            except TelegramError as e:
+                _LOG.error("Could not delete old drinks message", exc_info=e)
+
+        await self._send_new_drinks_message(user, state)
+
     async def list_drinks(self, update: Update, _) -> None:
         message = cast(Message, update.message)
         user = cast(User, message.from_user)
@@ -352,13 +361,7 @@ class MisfortuneBot:
             await message.reply_text(MESSAGE_ACTIVE_WHEEL_REQUIRED)
             return
 
-        if message_id := state.drinks_message:
-            try:
-                await user.delete_message(message_id=message_id)
-            except TelegramError as e:
-                _LOG.error("Could not delete old drinks message", exc_info=e)
-
-        await self._send_new_drinks_message(user, state)
+        await self._refresh_drinks(user, state)
 
     async def _build_drinks_markup(
         self, user_id: int, wheel_id: UUID
@@ -434,6 +437,7 @@ class MisfortuneBot:
         await self._update_user_state(user.id, state)
         if response.is_success:
             await user.send_message("Das Unglücksrad ist jetzt verbunden!")
+            await self._refresh_drinks(user, state)
         elif response.status_code == 404:
             await user.send_message(
                 "Du warst vermutlich zu langsam. Versuch's noch mal.",
@@ -542,7 +546,7 @@ class MisfortuneBot:
         wheel_state = TelegramWheelState.model_validate_json(response.content)
         state.active_wheel = wheel_state.wheel
         await self._update_user_state(user.id, state)
-        await self._ensure_drinks_message(user, state)
+        await self._refresh_drinks(user, state)
 
 
 def _load_user_states(config: FirestoreConfig) -> dict[int, UserState]:
