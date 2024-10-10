@@ -426,7 +426,12 @@ class MisfortuneBot:
 
         await self._ensure_drinks_message(user, state)
 
-    async def _connect_wheel(self, user: User, registration_id: UUID) -> None:
+    async def _connect_wheel(
+        self,
+        user: User,
+        registration_id: UUID,
+        trigger_message: MaybeInaccessibleMessage | None,
+    ) -> None:
         state = self._load_user_state(user.id)
         wheel = state.active_wheel
         if wheel is None:
@@ -437,10 +442,14 @@ class MisfortuneBot:
             await user.send_message("Dieser Registrierungsvorgang ist abgelaufen.")
             return
 
-        await self._register_client(user, wheel, state)
+        await self._register_client(user, wheel, state, trigger_message)
 
     async def _register_client(
-        self, user: User, wheel: TelegramWheel, state: UserState
+        self,
+        user: User,
+        wheel: TelegramWheel,
+        state: UserState,
+        trigger_message: MaybeInaccessibleMessage | None,
     ) -> None:
         pending_id = state.pending_registration_id
         if pending_id is None:
@@ -457,8 +466,13 @@ class MisfortuneBot:
         state.pending_registration_id = None
         await self._update_user_state(user.id, state)
         if response.is_success:
-            await user.send_message("Das Unglücksrad ist jetzt verbunden!")
+            await user.send_message(
+                f"Das Unglücksrad <b>{wheel.name}</b> ist jetzt verbunden!",
+                parse_mode=ParseMode.HTML,
+            )
             await self._refresh_drinks(user, state)
+            if trigger_message is not None:
+                await user.delete_message(trigger_message.message_id)
         elif response.status_code == 404:
             await user.send_message(
                 "Du warst vermutlich zu langsam. Versuch's noch mal.",
@@ -482,7 +496,11 @@ class MisfortuneBot:
         category, data = instruction.split(" ", maxsplit=1)
         match category:
             case "c":
-                await self._connect_wheel(callback_query.from_user, UUID(data))
+                await self._connect_wheel(
+                    callback_query.from_user,
+                    UUID(data),
+                    callback_query.message,
+                )
             case "d":
                 await self._on_drink_callback(callback_query.from_user, data)
             case "s":
@@ -526,10 +544,9 @@ class MisfortuneBot:
             _LOG.info("Created wheel %s", wheel.id)
 
             if state.pending_registration_id:
-                await self._register_client(user, wheel, state)
+                await self._register_client(user, wheel, state, message)
 
             await self._ensure_drinks_message(user, state)
-            await message.delete()
         else:
             limit = 16
             if len(text) > limit:
