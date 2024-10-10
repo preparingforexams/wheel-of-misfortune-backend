@@ -163,6 +163,13 @@ class MisfortuneBot:
 
         wheels = TelegramWheels.model_validate_json(response.content).wheels
 
+        if not wheels:
+            await message.reply_text(
+                "Du hast noch kein Unglücksrad erstellt."
+                " Schick mir einfach einen Namen, um ein neues anzulegen!"
+            )
+            return
+
         await message.reply_text(
             "Zu welchen Rad möchtest du wechseln?",
             reply_markup=InlineKeyboardMarkup(
