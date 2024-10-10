@@ -21,7 +21,7 @@ from telegram import (
 from telegram.constants import (
     ParseMode,
 )
-from telegram.error import TelegramError
+from telegram.error import TelegramError, BadRequest
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -324,6 +324,12 @@ class MisfortuneBot:
                     reply_markup=markup,
                 )
                 return
+            except BadRequest as e:
+                if e.message.startswith("Message is not modified")
+                    _LOG.info("Message could not be edited because it's unmodified")
+                    return
+
+                _LOG.error("Could not edit message", exc_info=e)
             except TelegramError as e:
                 _LOG.error("Could not edit message", exc_info=e)
 
