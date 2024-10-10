@@ -80,6 +80,7 @@ class MisfortuneBot:
             config.firestore.user_states
         )
         self._max_wheels = config.max_user_wheels
+        self._max_wheel_name_length = config.max_wheel_name_length
         self._user_states = user_states
 
     def _load_user_state(self, user_id: int) -> UserState:
@@ -228,9 +229,18 @@ class MisfortuneBot:
             await message.reply_text(MESSAGE_ACTIVE_WHEEL_REQUIRED)
             return
 
+        wheel_name = " ".join(args).strip()
+        limit = self._max_wheel_name_length
+        if len(wheel_name) > limit:
+            await message.reply_text(
+                f"Der Name ist leider zu lang. Es sind maximal {limit} Zeichen"
+                f" erlaubt (deine Nachricht hatte {len(wheel_name)} Zeichen)."
+            )
+            return
+
         response = await self._api.patch(
             f"/user/{user.id}/wheel/{wheel.id}/name",
-            params=dict(name=" ".join(args)),
+            params=dict(name=wheel_name),
         )
         if not response.is_success:
             await message.reply_text(
@@ -527,10 +537,19 @@ class MisfortuneBot:
         state = self._load_user_state(user.id)
         wheel = state.active_wheel
         if wheel is None:
+            wheel_name = text.strip()
+            limit = self._max_wheel_name_length
+            if len(wheel_name) > limit:
+                await message.reply_text(
+                    f"Der Name ist leider zu lang. Es sind maximal {limit} Zeichen"
+                    f" erlaubt (deine Nachricht hatte {len(wheel_name)} Zeichen)."
+                )
+                return
+
             # Creating a new wheel
             wheel_response = await self._api.post(
                 f"/user/{user.id}/wheel",
-                params=dict(name=text.strip()),
+                params=dict(name=wheel_name),
             )
             if not wheel_response.is_success:
                 await message.reply_text(

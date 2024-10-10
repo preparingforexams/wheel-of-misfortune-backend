@@ -33,6 +33,7 @@ class Config:
     internal_token: str
     jwt_secret: str
     max_user_wheels: int
+    max_wheel_name_length: int
     telegram_token: str
     telegram_bot_name: str
     sentry_dsn: str | None
@@ -46,6 +47,7 @@ class Config:
             internal_token=env.get_string("INTERNAL_TOKEN", required=True),
             jwt_secret=env.get_string("JWT_SECRET", required=True),
             max_user_wheels=env.get_int("MAX_USER_WHEELS", default=3),
+            max_wheel_name_length=env.get_int("MAX_WHEEL_NAME_LENGTH", default=64),
             sentry_dsn=env.get_string("SENTRY_DSN"),
             telegram_bot_name=env.get_string(
                 "TELEGRAM_BOT_NAME",

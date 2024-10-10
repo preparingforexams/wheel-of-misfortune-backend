@@ -20,6 +20,7 @@ def config() -> Config:
         ),
         jwt_secret="test",
         max_user_wheels=3,
+        max_wheel_name_length=64,
         internal_token="abc",
         sentry_dsn=None,
         telegram_bot_name="localpheasntestbot",
