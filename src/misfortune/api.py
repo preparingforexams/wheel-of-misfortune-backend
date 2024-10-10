@@ -119,26 +119,11 @@ def generate_code() -> str:
 
 async def fetch_wheels(client: firestore.AsyncClient) -> list[Wheel]:
     wheels = []
-    migrated = False
 
     for doc in await client.collection(config.firestore.wheels).get():
         doc_dict = doc.to_dict()
-        drinks = doc_dict["drinks"]
-        if drinks and isinstance(drinks[0], str):
-            migrated = True
-            # Migrate to Drink
-            doc_dict["drinks"] = [Drink.create(d) for d in drinks]
-
         wheel = Wheel.model_validate(doc_dict)
         wheels.append(wheel)
-
-    if migrated:
-        for wheel in wheels:
-            await (
-                client.collection(config.firestore.wheels)
-                .document(str(wheel.id))
-                .set(wheel.model_dump(mode="json"))
-            )
 
     return wheels
 
