@@ -121,17 +121,18 @@ class MisfortuneBot:
                 await self._update_user_state(user.id, state)
 
                 if wheel := state.active_wheel:
-                    await message.reply_text(
+                    await user.send_message(
                         "Möchtest du das Unglücksrad namens"
                         f" <b>{wheel.name}</b> verbinden?",
                         parse_mode=ParseMode.HTML,
                         reply_markup=self._build_connect_keyboard(registration_id),
                     )
                 else:
-                    await message.reply_text(
+                    await user.send_message(
                         "Alles klar, verbinden wir ein neues Unglücksrad! "
                         "Wie soll es heißen?"
                     )
+                await message.delete()
                 return
 
         if wheel := state.active_wheel:
@@ -147,6 +148,7 @@ class MisfortuneBot:
                 "Herzlich Willkommen beim Unglücksradler!"
                 " Wie soll dein Unglücksrad heißen?"
             )
+        await message.delete()
 
     async def switch_wheel(self, update: Update, _) -> None:
         message = cast(Message, update.message)
@@ -170,7 +172,7 @@ class MisfortuneBot:
             )
             return
 
-        await message.reply_text(
+        await user.send_message(
             "Zu welchen Rad möchtest du wechseln?",
             reply_markup=InlineKeyboardMarkup(
                 [
@@ -183,6 +185,7 @@ class MisfortuneBot:
                 ]
             ),
         )
+        await message.delete()
 
     async def create_wheel(self, update: Update, _) -> None:
         message = cast(Message, update.message)
@@ -237,6 +240,7 @@ class MisfortuneBot:
 
         state.active_wheel = TelegramWheel.model_validate_json(response.content)
         await self._update_user_state(user.id, state)
+        await message.delete()
 
     async def delete_wheel(self, update: Update, _) -> None:
         message = cast(Message, update.message)
@@ -378,6 +382,7 @@ class MisfortuneBot:
             return
 
         await self._refresh_drinks(user, state)
+        await message.delete()
 
     async def _build_drinks_markup(
         self, user_id: int, wheel_id: UUID
@@ -524,6 +529,7 @@ class MisfortuneBot:
                 await self._register_client(user, wheel, state)
 
             await self._ensure_drinks_message(user, state)
+            await message.delete()
         else:
             limit = 16
             if len(text) > limit:
