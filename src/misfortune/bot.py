@@ -295,7 +295,9 @@ class MisfortuneBot:
         markup = await self._build_drinks_markup(user_id, wheel.id)
         if not markup:
             return (
-                f"Es stehen aktuell keine Getränke auf dem Unglücksrad {wheel.name}.",
+                f"Es stehen aktuell keine Getränke auf dem Unglücksrad"
+                f" <b>{wheel.name}</b>."
+                f"\n\nSchick mir den Namen eines Getränks, dann füge ich es hinzu.",
                 None,
             )
         else:
