@@ -429,7 +429,11 @@ async def add_drink(
                 .document(str(wheel_id))
                 .update(dict(drinks=new_drinks))
             )
-            await atom.update(state.replace(drinks=new_drinks))
+            await atom.update(
+                state.replace(
+                    drinks=[d.model_dump(mode="json") for d in new_drinks],
+                )
+            )
 
 
 @app.delete(
