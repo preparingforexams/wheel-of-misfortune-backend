@@ -23,6 +23,7 @@ from pydantic_core import Url
 from .config import init_config
 from .observable import Observable, observable
 from .shared_model import (
+    Drink,
     MisfortuneModel,
     TelegramWheel,
     TelegramWheels,
@@ -38,7 +39,7 @@ class Wheel(MisfortuneModel):
     id: uuid.UUID
     name: str
     owner: int
-    drinks: list[str]
+    drinks: list[Drink]
 
     @classmethod
     def create(cls, owner: int, name: str) -> Self:
@@ -78,7 +79,7 @@ class WheelCredentials(MisfortuneModel):
 
 
 class State(MisfortuneModel):
-    drinks: Sequence[str]
+    drinks: Sequence[Drink]
     wheel_name: str
     code: str
     owner: int
@@ -118,9 +119,26 @@ def generate_code() -> str:
 
 async def fetch_wheels(client: firestore.AsyncClient) -> list[Wheel]:
     wheels = []
+    migrated = False
+
     for doc in await client.collection(config.firestore.wheels).get():
-        wheel = Wheel.model_validate(doc.to_dict())
+        doc_dict = doc.to_dict()
+        drinks = doc_dict["drinks"]
+        if drinks and isinstance(drinks[0], str):
+            migrated = True
+            # Migrate to Drink
+            doc_dict["drinks"] = [Drink.create(d) for d in drinks]
+
+        wheel = Wheel.model_validate(doc_dict)
         wheels.append(wheel)
+
+    if migrated:
+        for wheel in wheels:
+            await (
+                client.collection(config.firestore.wheels)
+                .document(str(wheel.id))
+                .set(wheel.model_dump(mode="json"))
+            )
 
     return wheels
 
@@ -411,14 +429,16 @@ async def add_drink(
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
 
+    name = name.strip()
+
     observable_state = _verify_access(user=user_id, wheel=wheel_id)
 
     async with observable_state.atomic() as atom:
         state: State = atom.value
 
-        if name not in state.drinks:
+        if name not in (d.name for d in state.drinks):
             new_drinks = list(state.drinks)
-            new_drinks.append(name)
+            new_drinks.append(Drink.create(name))
             await (
                 client.collection(config.firestore.wheels)
                 .document(str(wheel_id))
@@ -428,14 +448,14 @@ async def add_drink(
 
 
 @app.delete(
-    "/user/{user_id}/wheel/{wheel_id}/drink",
+    "/user/{user_id}/wheel/{wheel_id}/drink/{drink_id}",
     response_class=Response,
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_drink(
     user_id: int,
     wheel_id: uuid.UUID,
-    name: str,
+    drink_id: uuid.UUID,
     client: firestore.AsyncClient = Depends(_client),
     token: HTTPAuthorizationCredentials = Depends(auth_token),
 ) -> None:
@@ -446,7 +466,7 @@ async def delete_drink(
 
     async with observable_state.atomic() as atom:
         state = atom.value
-        drinks = [drink for drink in state.drinks if drink != name]
+        drinks = [drink for drink in state.drinks if drink.id != drink_id]
         await (
             client.collection(config.firestore.wheels)
             .document(str(wheel_id))

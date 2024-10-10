@@ -33,6 +33,7 @@ from telegram.ext import (
 
 from misfortune.config import Config, FirestoreConfig, init_config
 from misfortune.shared_model import (
+    Drink,
     MisfortuneModel,
     TelegramWheel,
     TelegramWheels,
@@ -395,7 +396,9 @@ class MisfortuneBot:
         await message.delete()
 
     async def _build_drinks_markup(
-        self, user_id: int, wheel_id: UUID
+        self,
+        user_id: int,
+        wheel_id: UUID,
     ) -> InlineKeyboardMarkup | None:
         response = await self._api.get(f"/user/{user_id}/wheel/{wheel_id}")
         response.raise_for_status()
@@ -406,13 +409,13 @@ class MisfortuneBot:
         return InlineKeyboardMarkup(self._build_buttons(drinks))
 
     @staticmethod
-    def _build_buttons(drinks: Sequence[str]) -> list[list[InlineKeyboardButton]]:
+    def _build_buttons(drinks: Sequence[Drink]) -> list[list[InlineKeyboardButton]]:
         return list(
             chunked(
                 [
                     InlineKeyboardButton(
-                        text=drink,
-                        callback_data=f"d {drink}",
+                        text=drink.name,
+                        callback_data=f"d {drink.id}",
                     )
                     for drink in drinks
                 ],
@@ -420,7 +423,11 @@ class MisfortuneBot:
             )
         )
 
-    async def _on_drink_callback(self, user: User, drink: str) -> None:
+    async def _on_drink_callback(
+        self,
+        user: User,
+        drink_id: UUID,
+    ) -> None:
         state = self._load_user_state(user.id)
         wheel = state.active_wheel
         if not wheel:
@@ -428,11 +435,14 @@ class MisfortuneBot:
             return
 
         response = await self._api.delete(
-            f"/user/{user.id}/wheel/{wheel.id}/drink",
-            params=dict(name=drink),
+            f"/user/{user.id}/wheel/{wheel.id}/drink/{drink_id}",
         )
         if not response.is_success:
-            _LOG.error("Could not delete drink %s from wheel %s", drink, wheel.id)
+            _LOG.error(
+                "Could not delete drink %s from wheel %s",
+                drink_id,
+                wheel.id,
+            )
 
         await self._ensure_drinks_message(user, state)
 
@@ -512,7 +522,10 @@ class MisfortuneBot:
                     callback_query.message,
                 )
             case "d":
-                await self._on_drink_callback(callback_query.from_user, data)
+                await self._on_drink_callback(
+                    callback_query.from_user,
+                    UUID(data),
+                )
             case "s":
                 await self._on_wheel_switch(
                     callback_query.from_user,

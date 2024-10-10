@@ -1,6 +1,7 @@
 import abc
 import uuid
 from collections.abc import Sequence
+from typing import Self
 
 from pydantic import BaseModel, ConfigDict
 
@@ -10,6 +11,18 @@ class MisfortuneModel(BaseModel, abc.ABC):
         frozen=True,
         extra="forbid",
     )
+
+
+class Drink(MisfortuneModel):
+    name: str
+    id: uuid.UUID
+
+    @classmethod
+    def create(cls, name: str) -> Self:
+        return cls(
+            name=name,
+            id=uuid.uuid4(),
+        )
 
 
 class TelegramWheel(MisfortuneModel):
@@ -24,4 +37,4 @@ class TelegramWheels(MisfortuneModel):
 
 class TelegramWheelState(MisfortuneModel):
     wheel: TelegramWheel
-    drinks: Sequence[str]
+    drinks: Sequence[Drink]
