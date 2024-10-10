@@ -13,6 +13,7 @@ from telegram import (
     Bot,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    MaybeInaccessibleMessage,
     Message,
     Update,
     User,
@@ -465,7 +466,11 @@ class MisfortuneBot:
             case "d":
                 await self._on_drink_callback(callback_query.from_user, data)
             case "s":
-                await self._on_wheel_switch(callback_query.from_user, UUID(data))
+                await self._on_wheel_switch(
+                    callback_query.from_user,
+                    wheel_id=UUID(data),
+                    callback_message=callback_query.message,
+                )
             case s:
                 _LOG.error("Received unknown callback category: %s", s)
 
@@ -532,7 +537,12 @@ class MisfortuneBot:
                 )
                 await message.reply_text("Sorry, das hat nicht funktioniert.")
 
-    async def _on_wheel_switch(self, user: User, wheel_id: UUID) -> None:
+    async def _on_wheel_switch(
+        self,
+        user: User,
+        callback_message: MaybeInaccessibleMessage | None,
+        wheel_id: UUID,
+    ) -> None:
         response = await self._api.get(f"/user/{user.id}/wheel/{wheel_id}")
         if not response.is_success:
             _LOG.error(
@@ -546,6 +556,15 @@ class MisfortuneBot:
         wheel_state = TelegramWheelState.model_validate_json(response.content)
         state.active_wheel = wheel_state.wheel
         await self._update_user_state(user.id, state)
+
+        if callback_message is not None:
+            try:
+                await user.delete_message(callback_message.message_id)
+                await self._ensure_drinks_message(user, state)
+                return
+            except TelegramError as e:
+                _LOG.error("Could not delete switch message", exc_info=e)
+
         await self._refresh_drinks(user, state)
 
 
