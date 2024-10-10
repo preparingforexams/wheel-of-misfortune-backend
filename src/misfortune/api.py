@@ -457,7 +457,9 @@ async def delete_drink(
         await (
             client.collection(config.firestore.wheels)
             .document(str(wheel_id))
-            .update(dict(drinks=drinks))
+            .update(
+                dict(drinks=[d.model_dump(mode="json") for d in drinks]),
+            )
         )
         await atom.update(state.replace(drinks=drinks))
 

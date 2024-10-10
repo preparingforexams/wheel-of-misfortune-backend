@@ -439,9 +439,10 @@ class MisfortuneBot:
         )
         if not response.is_success:
             _LOG.error(
-                "Could not delete drink %s from wheel %s",
+                "Could not delete drink %s from wheel %s (status %d)",
                 drink_id,
                 wheel.id,
+                response.status_code,
             )
 
         await self._ensure_drinks_message(user, state)
