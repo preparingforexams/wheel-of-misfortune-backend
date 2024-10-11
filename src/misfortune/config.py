@@ -46,7 +46,7 @@ class Config:
             firestore=FirestoreConfig.from_env(env),
             internal_token=env.get_string("INTERNAL_TOKEN", required=True),
             jwt_secret=env.get_string("JWT_SECRET", required=True),
-            max_user_wheels=env.get_int("MAX_USER_WHEELS", default=3),
+            max_user_wheels=env.get_int("MAX_USER_WHEELS", default=5),
             max_wheel_name_length=env.get_int("MAX_WHEEL_NAME_LENGTH", default=64),
             sentry_dsn=env.get_string("SENTRY_DSN"),
             telegram_bot_name=env.get_string(
