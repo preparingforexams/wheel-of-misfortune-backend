@@ -23,7 +23,7 @@ pydantic = "^2.0.0"
 python = "~3.12"
 python-telegram-bot = "21.6"
 sentry-sdk = "^2.0.0"
-uvicorn = "^0.31.0"
+uvicorn = "^0.32.0"
 websockets = "13.1"
 pyjwt = "^2.9.0"
 
