@@ -10,7 +10,6 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Self
 
 import jwt
-import pendulum
 from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect, status
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -105,7 +104,7 @@ class State(MisfortuneModel):
         if drinking_age is None:
             return True
 
-        now: datetime = pendulum.now()
+        now = datetime.now(tz=UTC)
         delta = now - drinking_age
         return delta > timedelta(minutes=1)
 
