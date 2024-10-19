@@ -207,7 +207,10 @@ class MisfortuneBot:
 
         state.active_wheel = None
         if old_message := state.drinks_message:
-            await user.delete_message(old_message)
+            try:
+                await user.delete_message(old_message)
+            except BadRequest as e:
+                _LOG.warning("Ignoring bad request", exc_info=e)
             state.drinks_message = None
         await self._update_user_state(user.id, state)
         await message.reply_text("Okay, wie soll das neue Unglücksrad heißen?")
