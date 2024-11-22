@@ -7,7 +7,7 @@ import uuid
 from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
-from typing import Any, Self
+from typing import Annotated, Any, Self
 
 import jwt
 from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect, status
@@ -203,7 +203,7 @@ def _verify_access(
 @app.get("/user/{user_id}/wheel")
 async def list_wheels(
     user_id: int,
-    token: HTTPAuthorizationCredentials = Depends(auth_token),
+    token: Annotated[HTTPAuthorizationCredentials, Depends(auth_token)],
 ) -> TelegramWheels:
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
@@ -228,8 +228,8 @@ async def list_wheels(
 async def create_wheel(
     user_id: int,
     name: str,
-    token: HTTPAuthorizationCredentials = Depends(auth_token),
-    client: firestore.AsyncClient = Depends(_client),
+    token: Annotated[HTTPAuthorizationCredentials, Depends(auth_token)],
+    client: Annotated[firestore.AsyncClient, Depends(_client)],
 ) -> TelegramWheel:
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
@@ -261,7 +261,7 @@ async def create_wheel(
 async def get_wheel_state(
     user_id: int,
     wheel_id: uuid.UUID,
-    token: HTTPAuthorizationCredentials = Depends(auth_token),
+    token: Annotated[HTTPAuthorizationCredentials, Depends(auth_token)],
 ) -> TelegramWheelState:
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
@@ -282,8 +282,8 @@ async def update_wheel_name(
     user_id: int,
     wheel_id: uuid.UUID,
     name: str,
-    token: HTTPAuthorizationCredentials = Depends(auth_token),
-    client: firestore.AsyncClient = Depends(_client),
+    token: Annotated[HTTPAuthorizationCredentials, Depends(auth_token)],
+    client: Annotated[firestore.AsyncClient, Depends(_client)],
 ) -> TelegramWheel:
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
@@ -309,7 +309,7 @@ async def add_client_registration(
     user_id: int,
     wheel_id: uuid.UUID,
     registration_id: uuid.UUID,
-    token: HTTPAuthorizationCredentials = Depends(auth_token),
+    token: Annotated[HTTPAuthorizationCredentials, Depends(auth_token)],
 ) -> None:
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
@@ -330,8 +330,8 @@ async def add_client_registration(
 async def delete_wheel(
     user_id: int,
     wheel_id: uuid.UUID,
-    token: HTTPAuthorizationCredentials = Depends(auth_token),
-    client: firestore.AsyncClient = Depends(_client),
+    token: Annotated[HTTPAuthorizationCredentials, Depends(auth_token)],
+    client: Annotated[firestore.AsyncClient, Depends(_client)],
 ) -> None:
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
@@ -345,7 +345,7 @@ async def delete_wheel(
 async def spin(
     wheel_id: uuid.UUID,
     speed: float,
-    token: HTTPAuthorizationCredentials = Depends(auth_token),
+    token: Annotated[HTTPAuthorizationCredentials, Depends(auth_token)],
 ) -> None:
     observable_state = observable_states[wheel_id]
 
@@ -377,7 +377,7 @@ def _decode_wheel_token(token: str) -> uuid.UUID:
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def unlock(
-    token: HTTPAuthorizationCredentials = Depends(auth_token),
+    token: Annotated[HTTPAuthorizationCredentials, Depends(auth_token)],
 ) -> None:
     try:
         wheel_id = _decode_wheel_token(token.credentials)
@@ -407,8 +407,8 @@ async def add_drink(
     user_id: int,
     wheel_id: uuid.UUID,
     name: str,
-    token: HTTPAuthorizationCredentials = Depends(auth_token),
-    client: firestore.AsyncClient = Depends(_client),
+    token: Annotated[HTTPAuthorizationCredentials, Depends(auth_token)],
+    client: Annotated[firestore.AsyncClient, Depends(_client)],
 ) -> None:
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
@@ -442,8 +442,8 @@ async def delete_drink(
     user_id: int,
     wheel_id: uuid.UUID,
     drink_id: uuid.UUID,
-    client: firestore.AsyncClient = Depends(_client),
-    token: HTTPAuthorizationCredentials = Depends(auth_token),
+    client: Annotated[firestore.AsyncClient, Depends(_client)],
+    token: Annotated[HTTPAuthorizationCredentials, Depends(auth_token)],
 ) -> None:
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
