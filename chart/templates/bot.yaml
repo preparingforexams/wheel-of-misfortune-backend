@@ -31,10 +31,7 @@ spec:
       containers:
         - name: bot
           image: "{{ .Values.image }}:{{ .Values.appVersion }}"
-          args:
-            - python
-            - -m
-            - misfortune.bot
+          args: [ "-m", misfortune.bot ]
           env:
             - name: API_URL
               value: http://api
