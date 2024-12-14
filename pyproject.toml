@@ -1,40 +1,47 @@
 [project]
 requires-python = "==3.13.*"
-
-[tool.poetry]
 name = "misfortune"
 version = "1.0.0"
 description = ""
-authors = ["Björn Petersen <git@bjoernpetersen.net>"]
+authors = [{ name = "Björn Petersen", email = "git@bjoernpetersen.net" }]
+classifiers = [
+    "Private :: Do Not Upload",
+    "License :: OSI Approved :: MIT License",
+]
 
-[[tool.poetry.source]]
+dependencies = [
+    "bs-config [dotenv] ==1.1.1",
+    "fastapi ==0.115.*",
+    "google-cloud-firestore >=2, <3",
+    "httpx",
+    "more-itertools >=10, <11",
+    "pydantic >=2, <3",
+    "python-telegram-bot ==21.9",
+    "sentry-sdk >=2, <3",
+    "uvicorn ==0.32.*",
+    "websockets ==14.1",
+    "pyjwt >=2, <3",
+]
+
+[dependency-groups]
+dev = [
+    "mypy ==1.13.*",
+    "pytest >=8, <9",
+    "pytest-mock >=3, <4",
+    "ruff ==0.8.3",
+]
+
+[[tool.uv.index]]
 name = "internal"
 url = "https://pypi.bjoernpetersen.net"
-priority = "explicit"
+explicit = true
 
-[tool.poetry.dependencies]
-bs-config = { version = "^1.0.0", extras = ["dotenv"], source = "internal" }
-fastapi = "^0.115.0"
-google-cloud-firestore = "^2.5.2"
-httpx = "*"
-more-itertools = "^10.0.0"
-pydantic = "^2.0.0"
-python = "~3.13"
-python-telegram-bot = "21.9"
-sentry-sdk = "^2.0.0"
-uvicorn = "^0.32.0"
-websockets = "14.1"
-pyjwt = "^2.9.0"
-
-[tool.poetry.group.dev.dependencies]
-mypy = "~1.13"
-pytest = "^8.0.0"
-pytest-mock = "^3.11.1"
-ruff = "0.8.3"
+[tool.uv.sources]
+bs-config = { index = "internal" }
 
 [build-system]
-requires = ["poetry-core>=1.2.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 filterwarnings = [
@@ -82,9 +89,6 @@ ignore = [
     # redundant-open-modes
     "UP015",
 ]
-
-[tool.ruff.lint.isort]
-known-first-party = ["misfortune"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
