@@ -4,6 +4,7 @@ metadata:
   name: api
 spec:
   replicas: 1
+  revisionHistoryLimit: 0
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -17,6 +18,11 @@ spec:
       labels:
         app: api
     spec:
+      serviceAccountName: backend
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       volumes:
         - name: gcp
           secret:
@@ -53,3 +59,13 @@ spec:
             httpGet:
               port: http
               path: /probe/live
+          resources:
+            requests:
+              cpu: 10m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]

@@ -12,6 +12,7 @@ metadata:
   name: bot
 spec:
   replicas: 1
+  revisionHistoryLimit: 0
   serviceName: bot
   selector:
     matchLabels:
@@ -21,6 +22,11 @@ spec:
       labels:
         app: bot
     spec:
+      serviceAccountName: backend
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       volumes:
         - name: gcp
           secret:
@@ -40,6 +46,16 @@ spec:
           envFrom:
             - secretRef:
                 name: tokens
+          resources:
+            requests:
+              cpu: 5m
+              memory: 128Mi
+            limits:
+              cpu: 200m
           volumeMounts:
             - mountPath: /secret
               name: gcp
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
