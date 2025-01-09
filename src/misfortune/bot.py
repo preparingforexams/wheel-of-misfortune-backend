@@ -300,7 +300,7 @@ class MisfortuneBot:
             registration_id := state.pending_registration_id
         ):
             await message.reply_text(
-                "Möchtest du das Unglücksrad namens" f" <b>{wheel.name}</b> verbinden?",
+                f"Möchtest du das Unglücksrad namens <b>{wheel.name}</b> verbinden?",
                 parse_mode=ParseMode.HTML,
                 reply_markup=self._build_connect_keyboard(registration_id),
             )
