@@ -163,7 +163,7 @@ wheels = [
 
 [[package]]
 name = "google-cloud-firestore"
-version = "2.19.0"
+version = "2.20.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-api-core", extra = ["grpc"] },
@@ -172,9 +172,9 @@ dependencies = [
     { name = "proto-plus" },
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f0/b5/362c269bf1ee3ff25ddfdb0767718d610ee6220bc3730f5e458f945ef19d/google_cloud_firestore-2.19.0.tar.gz", hash = "sha256:1b2ce6e0b791aee89a1e4f072beba1012247e89baca361eed721fb467fe054b0", size = 489492 }
+sdist = { url = "https://files.pythonhosted.org/packages/ce/9b/7c2f746cd8ec3f08d02d5626d863c2486dd69eb0b1f77bdcd9b0fe15d478/google_cloud_firestore-2.20.0.tar.gz", hash = "sha256:ad863be58667233921e02f0b81aa94a816f5e63a707cb33c97b1aa357a50566d", size = 491103 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/43/2c/48a5dc8dc498d03918fb341a600aff2b7a5aa1601bdc1ad92955f0c7a8ca/google_cloud_firestore-2.19.0-py2.py3-none-any.whl", hash = "sha256:b49f0019d7bd0d4ab5972a4cff13994b0aabe72d24242200d904db2fb49df7f7", size = 336760 },
+    { url = "https://files.pythonhosted.org/packages/80/3f/52fd16f3de3ed4ac2e3b7c728fb3b29b081791cf6292b74e4301ad489737/google_cloud_firestore-2.20.0-py2.py3-none-any.whl", hash = "sha256:505ef6951b56ea91f6762d99b3429ca6def6dceb254b4ba1ffc85e69b71414d7", size = 337765 },
 ]
 
 [[package]]
@@ -326,11 +326,11 @@ dev = [
 
 [[package]]
 name = "more-itertools"
-version = "10.5.0"
+version = "10.6.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/51/78/65922308c4248e0eb08ebcbe67c95d48615cc6f27854b6f2e57143e9178f/more-itertools-10.5.0.tar.gz", hash = "sha256:5482bfef7849c25dc3c6dd53a6173ae4795da2a41a80faea6700d9f5846c5da6", size = 121020 }
+sdist = { url = "https://files.pythonhosted.org/packages/88/3b/7fa1fe835e2e93fd6d7b52b2f95ae810cf5ba133e1845f726f5a992d62c2/more-itertools-10.6.0.tar.gz", hash = "sha256:2cd7fad1009c31cc9fb6a035108509e6547547a7a738374f10bd49a09eb3ee3b", size = 125009 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/48/7e/3a64597054a70f7c86eb0a7d4fc315b8c1ab932f64883a297bdffeb5f967/more_itertools-10.5.0-py3-none-any.whl", hash = "sha256:037b0d3203ce90cca8ab1defbbdac29d5f993fc20131f3664dc8d6acfa872aef", size = 60952 },
+    { url = "https://files.pythonhosted.org/packages/23/62/0fe302c6d1be1c777cab0616e6302478251dfbf9055ad426f5d0def75c89/more_itertools-10.6.0-py3-none-any.whl", hash = "sha256:6eb054cb4b6db1473f6e15fcc676a08e4732548acd47c708f0e179c2c7c01e89", size = 63038 },
 ]
 
 [[package]]
@@ -576,15 +576,15 @@ wheels = [
 
 [[package]]
 name = "sentry-sdk"
-version = "2.19.2"
+version = "2.20.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/36/4a/eccdcb8c2649d53440ae1902447b86e2e2ad1bc84207c80af9696fa07614/sentry_sdk-2.19.2.tar.gz", hash = "sha256:467df6e126ba242d39952375dd816fbee0f217d119bf454a8ce74cf1e7909e8d", size = 299047 }
+sdist = { url = "https://files.pythonhosted.org/packages/68/e8/6a366c0cd5e129dda6ecb20ff097f70b18182c248d4c27e813c21f98992a/sentry_sdk-2.20.0.tar.gz", hash = "sha256:afa82713a92facf847df3c6f63cec71eb488d826a50965def3d7722aa6f0fdab", size = 300125 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/31/4d/74597bb6bcc23abc774b8901277652c61331a9d4d0a8d1bdb20679b9bbcb/sentry_sdk-2.19.2-py2.py3-none-any.whl", hash = "sha256:ebdc08228b4d131128e568d696c210d846e5b9d70aa0327dec6b1272d9d40b84", size = 322942 },
+    { url = "https://files.pythonhosted.org/packages/e6/0f/6f7e6cd0f4a141752caef3f79300148422fdf2b8b68b531f30b2b0c0cbda/sentry_sdk-2.20.0-py2.py3-none-any.whl", hash = "sha256:c359a1edf950eb5e80cffd7d9111f3dbeef57994cb4415df37d39fda2cf22364", size = 322576 },
 ]
 
 [[package]]
