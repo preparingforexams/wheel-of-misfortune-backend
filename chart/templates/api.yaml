@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: api
 spec:
-  replicas: 1
+  replicas: {{ if .Values.isEnabled }}1{{ else }}0{{ end }}
   revisionHistoryLimit: 0
   strategy:
     type: RollingUpdate

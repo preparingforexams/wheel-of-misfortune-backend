@@ -11,7 +11,7 @@ kind: StatefulSet
 metadata:
   name: bot
 spec:
-  replicas: 1
+  replicas: {{ if .Values.isEnabled }}1{{ else }}0{{ end }}
   revisionHistoryLimit: 0
   serviceName: bot
   selector:

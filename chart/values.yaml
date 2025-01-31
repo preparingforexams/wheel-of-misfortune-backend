@@ -1,4 +1,5 @@
 appVersion: latest
+isEnabled: true
 image: ghcr.io/preparingforexams/wheel-of-misfortune-backend
 serviceAccount:
   json: ${GCP_SERVICE_ACCOUNT_JSON}
