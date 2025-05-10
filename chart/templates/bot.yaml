@@ -30,9 +30,6 @@ spec:
       volumes:
         - name: gcp
           secret:
-            items:
-              - key: SERVICE_ACCOUNT_JSON
-                path: sa.json
             secretName: gcp
       containers:
         - name: bot
@@ -42,7 +39,7 @@ spec:
             - name: API_URL
               value: http://api
             - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: /secret/sa.json
+              value: /secret/gsa.json
           envFrom:
             - secretRef:
                 name: tokens

@@ -26,9 +26,6 @@ spec:
       volumes:
         - name: gcp
           secret:
-            items:
-              - key: SERVICE_ACCOUNT_JSON
-                path: sa.json
             secretName: gcp
       containers:
         - name: api
@@ -46,7 +43,7 @@ spec:
               name: gcp
           env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: /secret/sa.json
+              value: /secret/gsa.json
           envFrom:
             - secretRef:
                 name: tokens

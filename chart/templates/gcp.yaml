@@ -4,12 +4,12 @@ kind: ExternalSecret
 metadata:
   name: gcp
 spec:
+  refreshInterval: "24h"
   secretStoreRef:
-    name: doppler-prep
+    name: scaleway-prep-misfortune
     kind: ClusterSecretStore
-  target:
-    name: gcp
   data:
-    - remoteRef:
-        key: MISFORTUNE_GSA_JSON
-      secretKey: SERVICE_ACCOUNT_JSON
+    - secretKey: gsa.json
+      remoteRef:
+        key: "name:gsa-json"
+        decodingStrategy: None
