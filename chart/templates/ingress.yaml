@@ -3,7 +3,9 @@ kind: Ingress
 metadata:
   name: api
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
+    cert-manager.io/cluster-issuer: zerossl
+    cert-manager.io/private-key-algorithm: ECDSA
+    cert-manager.io/private-key-rotation-policy: Always
 spec:
   rules:
     - host: api-local.bembel.party
