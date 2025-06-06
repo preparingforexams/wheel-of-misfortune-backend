@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import logging
 import signal
@@ -6,6 +7,7 @@ from typing import Self, cast
 from uuid import UUID
 
 import httpx
+import uvloop
 from google.cloud import firestore
 from more_itertools import chunked
 from pydantic import ConfigDict
@@ -654,6 +656,8 @@ def _load_user_states(config: FirestoreConfig) -> dict[int, UserState]:
 
 
 def run():
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+
     config = init_config()
     app = (
         Application.builder()

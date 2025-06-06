@@ -21,6 +21,7 @@ dependencies = [
     "uvicorn[standard] ==0.34.*",
     "websockets ==15.0.1",
     "pyjwt >=2, <3",
+    "uvloop ==0.21.*",
 ]
 
 [dependency-groups]
