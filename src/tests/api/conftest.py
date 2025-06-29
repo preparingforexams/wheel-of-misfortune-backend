@@ -2,6 +2,7 @@ from collections.abc import Callable
 from uuid import UUID
 
 import httpx
+from bs_nats_updater import NatsConfig
 from fastapi.testclient import TestClient
 from pytest import fixture
 
@@ -21,6 +22,7 @@ def config() -> Config:
         jwt_secret="test",
         max_user_wheels=3,
         max_wheel_name_length=64,
+        nats=NatsConfig("", "", "", "", ""),
         internal_token="abc",
         sentry_dsn=None,
         telegram_bot_name="localpheasntestbot",

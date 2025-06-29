@@ -11,6 +11,7 @@ classifiers = [
 
 dependencies = [
     "bs-config [dotenv] ==1.1.1",
+    "bs-nats-updater ==2.0.0",
     "fastapi ==0.115.*",
     "google-cloud-firestore >=2, <3",
     "httpx",
@@ -39,6 +40,7 @@ explicit = true
 
 [tool.uv.sources]
 bs-config = { index = "internal" }
+bs-nats-updater = { index = "internal" }
 
 [build-system]
 requires = ["hatchling"]

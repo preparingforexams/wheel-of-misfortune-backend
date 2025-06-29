@@ -8,6 +8,7 @@ from uuid import UUID
 
 import httpx
 import uvloop
+from bs_nats_updater import create_updater
 from google.cloud import firestore
 from more_itertools import chunked
 from pydantic import ConfigDict
@@ -661,9 +662,7 @@ def run():
     config = init_config()
     app = (
         Application.builder()
-        .token(config.telegram_token)
-        .http_version("1.1")
-        .get_updates_http_version("1.1")
+        .updater(create_updater(config.telegram_token, config.nats))
         .build()
     )
     user_states = _load_user_states(config.firestore)

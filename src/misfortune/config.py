@@ -4,6 +4,7 @@ from typing import Self
 
 import sentry_sdk
 from bs_config import Env
+from bs_nats_updater import NatsConfig
 
 
 @dataclass
@@ -34,6 +35,7 @@ class Config:
     jwt_secret: str
     max_user_wheels: int
     max_wheel_name_length: int
+    nats: NatsConfig
     telegram_token: str
     telegram_bot_name: str
     sentry_dsn: str | None
@@ -48,6 +50,7 @@ class Config:
             jwt_secret=env.get_string("JWT_SECRET", required=True),
             max_user_wheels=env.get_int("MAX_USER_WHEELS", default=5),
             max_wheel_name_length=env.get_int("MAX_WHEEL_NAME_LENGTH", default=64),
+            nats=NatsConfig.from_env(env.scoped("NATS_")),
             sentry_dsn=env.get_string("SENTRY_DSN"),
             telegram_bot_name=env.get_string(
                 "TELEGRAM_BOT_NAME",
