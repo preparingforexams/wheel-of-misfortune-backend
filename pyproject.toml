@@ -17,7 +17,7 @@ dependencies = [
     "httpx",
     "more-itertools >=10, <11",
     "pydantic >=2, <3",
-    "python-telegram-bot ==22.3",
+    "python-telegram-bot ==22.4",
     "sentry-sdk >=2, <3",
     "uvicorn[standard] ==0.35.*",
     "websockets ==15.0.1",
