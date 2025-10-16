@@ -22,7 +22,7 @@ dependencies = [
     "uvicorn[standard] ==0.37.*",
     "websockets ==15.0.1",
     "pyjwt >=2, <3",
-    "uvloop ==0.21.*",
+    "uvloop ==0.22.*",
 ]
 
 [dependency-groups]
