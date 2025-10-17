@@ -101,4 +101,8 @@ ignore = [
 "__init__.py" = ["F401"]
 
 [tool.ruff.lint.flake8-type-checking]
-runtime-evaluated-base-classes = ["pydantic.BaseModel"]
+runtime-evaluated-base-classes = [
+    "pydantic.BaseModel",
+    "misfortune.shared_model.MisfortuneModel",
+]
+

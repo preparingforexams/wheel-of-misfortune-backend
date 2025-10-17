@@ -1,13 +1,17 @@
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-import httpx
 from bs_nats_updater import NatsConfig
 from fastapi.testclient import TestClient
 from pytest import fixture
 
 from misfortune.config import Config, FirestoreConfig
 from tests.bearer_auth import BearerAuth
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    import httpx
 
 
 @fixture()

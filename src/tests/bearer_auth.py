@@ -1,10 +1,14 @@
-from collections.abc import Generator
+from typing import TYPE_CHECKING
 
-import httpx
-from httpx import Request, Response
+from httpx import Auth
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from httpx import Request, Response
 
 
-class BearerAuth(httpx.Auth):
+class BearerAuth(Auth):
     def __init__(self, token: str):
         self._token = token
 
