@@ -2,8 +2,7 @@ import asyncio
 import base64
 import logging
 import signal
-from collections.abc import Sequence
-from typing import Self, cast
+from typing import TYPE_CHECKING, Self, cast
 from uuid import UUID
 
 import httpx
@@ -42,6 +41,9 @@ from misfortune.shared_model import (
     TelegramWheels,
     TelegramWheelState,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 _LOG = logging.getLogger(__name__)
 MESSAGE_ACTIVE_WHEEL_REQUIRED = (
