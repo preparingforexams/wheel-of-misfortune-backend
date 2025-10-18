@@ -19,7 +19,7 @@ dependencies = [
     "pydantic >=2, <3",
     "python-telegram-bot ==22.5",
     "sentry-sdk >=2, <3",
-    "uvicorn[standard] ==0.37.*",
+    "uvicorn[standard] ==0.38.*",
     "websockets ==15.0.1",
     "pyjwt >=2, <3",
     "uvloop ==0.22.*",
