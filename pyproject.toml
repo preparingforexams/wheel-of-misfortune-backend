@@ -10,7 +10,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "bs-config [dotenv] ==1.2.0",
+    "bs-config [dotenv] ==2.0.0",
     "bs-nats-updater ==2.1.0",
     "fastapi ==0.119.*",
     "google-cloud-firestore >=2, <3",
