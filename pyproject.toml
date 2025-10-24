@@ -10,8 +10,8 @@ classifiers = [
 ]
 
 dependencies = [
-    "bs-config [dotenv] ==1.2.0",
-    "bs-nats-updater ==2.1.2",
+    "bs-config [dotenv] ==3.0.0",
+    "bs-nats-updater ==3.0.0",
     "fastapi ==0.120.*",
     "google-cloud-firestore >=2, <3",
     "httpx",
@@ -43,13 +43,17 @@ bs-config = { index = "internal" }
 bs-nats-updater = { index = "internal" }
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build==0.9.*"]
+build-backend = "uv_build"
 
 [tool.pytest.ini_options]
 filterwarnings = [
-    # "error",
+     "error",
 ]
+addopts = [
+    "--import-mode=importlib",
+]
+
 log_cli=true
 log_cli_level = "info"
 xfail_strict = true

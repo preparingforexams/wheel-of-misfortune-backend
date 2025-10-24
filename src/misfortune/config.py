@@ -16,11 +16,11 @@ class FirestoreConfig:
     def from_env(cls, env: Env) -> Self:
         return cls(
             user_states=env.get_string(
-                "FIRESTORE_USER_STATES_COLLECTION",
+                "user-states-collection",
                 default="active_user_wheel",
             ),
             wheels=env.get_string(
-                "FIRESTORE_WHEELS_COLLECTION",
+                "wheels-collection",
                 default="wheels",
             ),
         )
@@ -43,20 +43,20 @@ class Config:
     @classmethod
     def from_env(cls, env: Env) -> Self:
         return cls(
-            api_url=env.get_string("API_URL", default="https://api.bembel.party"),
-            app_version=env.get_string("APP_VERSION", default="dev"),
-            firestore=FirestoreConfig.from_env(env),
-            internal_token=env.get_string("INTERNAL_TOKEN", required=True),
-            jwt_secret=env.get_string("JWT_SECRET", required=True),
-            max_user_wheels=env.get_int("MAX_USER_WHEELS", default=5),
-            max_wheel_name_length=env.get_int("MAX_WHEEL_NAME_LENGTH", default=64),
-            nats=NatsConfig.from_env(env.scoped("NATS_")),
-            sentry_dsn=env.get_string("SENTRY_DSN"),
+            api_url=env.get_string("api-url", default="https://api.bembel.party"),
+            app_version=env.get_string("app-version", default="dev"),
+            firestore=FirestoreConfig.from_env(env / "firestore"),
+            internal_token=env.get_string("internal-token", required=True),
+            jwt_secret=env.get_string("jwt-secret", required=True),
+            max_user_wheels=env.get_int("max-user-wheels", default=5),
+            max_wheel_name_length=env.get_int("max-wheel-name-length", default=64),
+            nats=NatsConfig.from_env(env / "nats"),
+            sentry_dsn=env.get_string("sentry-dsn"),
             telegram_bot_name=env.get_string(
-                "TELEGRAM_BOT_NAME",
+                "telegram-bot-name",
                 default="misfortune_bot",
             ),
-            telegram_token=env.get_string("TELEGRAM_TOKEN", required=True),
+            telegram_token=env.get_string("telegram-token", required=True),
         )
 
     def basic_setup(self) -> None:
