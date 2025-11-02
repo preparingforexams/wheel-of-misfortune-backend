@@ -23,6 +23,10 @@ spec:
         - name: gcp
           secret:
             secretName: gcp
+        - name: signaling
+          emptyDir:
+            sizeLimit: 1Mi
+            medium: Memory
       containers:
         - name: bot
           image: "{{ .Values.image }}:{{ .Values.appVersion }}"
@@ -44,7 +48,13 @@ spec:
           volumeMounts:
             - mountPath: /secret
               name: gcp
+            - mountPath: /var/run/bot
+              name: signaling
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
               drop: [ALL]
+          startupProbe:
+            failureThreshold: 20
+            exec:
+              command: [ "test", "-f", "/var/run/bot/is-running"]

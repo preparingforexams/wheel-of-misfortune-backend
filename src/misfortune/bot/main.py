@@ -696,11 +696,13 @@ def run():
         app.add_handler(CallbackQueryHandler(bot.on_callback))
         app.add_handler(MessageHandler(filters.TEXT, bot.on_message))
 
-        def _exit(sig: signal.Signals) -> None:
-            _LOG.info("Received exit signal %s", sig.name)
-            raise SystemExit
-
         async def _run() -> None:
+            exit_signal = asyncio.Event()
+
+            def _exit(sig: signal.Signals) -> None:
+                _LOG.info("Received exit signal %s", sig.name)
+                exit_signal.set()
+
             loop = asyncio.get_event_loop()
             for sig in [signal.SIGTERM, signal.SIGINT]:
                 loop.add_signal_handler(sig, _exit, sig)
@@ -708,11 +710,16 @@ def run():
             async with app:
                 await app.start()
                 await app.updater.start_polling()
+
+                _LOG.info("Running")
+                if path := config.run_signal_file:
+                    path.touch(exist_ok=False)
+                await exit_signal.wait()
+
                 await app.updater.stop()
                 await app.stop()
                 await bot.close()
 
-        _LOG.info("Running")
         runner.run(_run())
 
 

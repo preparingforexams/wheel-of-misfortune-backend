@@ -28,6 +28,7 @@ def config() -> Config:
         max_wheel_name_length=64,
         nats=NatsConfig("", "", "", "", ""),
         internal_token="abc",
+        run_signal_file=None,
         sentry_dsn=None,
         telegram_bot_name="localpheasntestbot",
         telegram_token="",

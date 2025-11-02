@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Self
 
 import sentry_sdk
@@ -36,9 +37,10 @@ class Config:
     max_user_wheels: int
     max_wheel_name_length: int
     nats: NatsConfig
+    run_signal_file: Path | None
+    sentry_dsn: str | None
     telegram_token: str
     telegram_bot_name: str
-    sentry_dsn: str | None
 
     @classmethod
     def from_env(cls, env: Env) -> Self:
@@ -51,6 +53,7 @@ class Config:
             max_user_wheels=env.get_int("max-user-wheels", default=5),
             max_wheel_name_length=env.get_int("max-wheel-name-length", default=64),
             nats=NatsConfig.from_env(env / "nats"),
+            run_signal_file=env.get_string("run-signal-file", transform=Path),
             sentry_dsn=env.get_string("sentry-dsn"),
             telegram_bot_name=env.get_string(
                 "telegram-bot-name",
