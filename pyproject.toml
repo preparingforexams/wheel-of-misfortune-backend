@@ -13,15 +13,15 @@ dependencies = [
     "bs-config [dotenv] ==3.4.0",
     "bs-nats-updater ==3.0.0",
     "fastapi ==0.120.*",
-    "google-cloud-firestore >=2, <3",
     "httpx",
     "more-itertools >=10, <11",
     "pydantic >=2, <3",
+    "pyjwt >=2, <3",
     "python-telegram-bot ==22.5",
+    "redis[hiredis]==7.0.1",
     "sentry-sdk >=2, <3",
     "uvicorn[standard] ==0.38.*",
     "websockets ==15.0.1",
-    "pyjwt >=2, <3",
     "uvloop ==0.22.*",
 ]
 
@@ -41,6 +41,7 @@ explicit = true
 [tool.uv.sources]
 bs-config = { index = "internal" }
 bs-nats-updater = { index = "internal" }
+bs-state = { index = "internal" }
 
 [build-system]
 requires = ["uv_build==0.9.*"]
@@ -48,13 +49,13 @@ build-backend = "uv_build"
 
 [tool.pytest.ini_options]
 filterwarnings = [
-     "error",
+    "error",
 ]
 addopts = [
     "--import-mode=importlib",
 ]
 
-log_cli=true
+log_cli = true
 log_cli_level = "info"
 xfail_strict = true
 
@@ -63,10 +64,6 @@ plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
 module = "asyncache"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "google.cloud.*"
 ignore_missing_imports = true
 
 [tool.pydantic-mypy]

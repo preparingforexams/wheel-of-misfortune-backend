@@ -633,7 +633,7 @@ class MisfortuneBot:
 
 def run():
     config = init_config()
-    repo = Repository(config.firestore)
+    repo = Repository(config.repo)
     app = (
         Application.builder()
         .updater(create_updater(config.telegram_token, config.nats))

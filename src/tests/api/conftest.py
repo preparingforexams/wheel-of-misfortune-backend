@@ -1,11 +1,12 @@
+from pathlib import Path
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from bs_nats_updater import NatsConfig
+from bs_config import Env
 from fastapi.testclient import TestClient
 from pytest import fixture
 
-from misfortune.config import Config, FirestoreConfig
+from misfortune.config import Config
 from tests.bearer_auth import BearerAuth
 
 if TYPE_CHECKING:
@@ -14,25 +15,15 @@ if TYPE_CHECKING:
     import httpx
 
 
-@fixture()
+@fixture(scope="session")
 def config() -> Config:
-    return Config(
-        api_url="",
-        app_version="",
-        firestore=FirestoreConfig(
-            user_states="test_users",
-            wheels="test_wheels",
-        ),
-        jwt_secret="test",
-        max_user_wheels=3,
-        max_wheel_name_length=64,
-        nats=NatsConfig("", "", "", "", ""),
-        internal_token="abc",
-        run_signal_file=None,
-        sentry_dsn=None,
-        telegram_bot_name="localpheasntestbot",
-        telegram_token="",
+    env = Env.load(
+        include_default_dotenv=True,
+        toml_configs=[
+            Path("config-test.toml"),
+        ],
     )
+    return Config.from_env(env)
 
 
 @fixture()

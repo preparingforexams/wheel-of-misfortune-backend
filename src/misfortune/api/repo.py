@@ -1,66 +1,75 @@
+import asyncio
+import logging
 from typing import TYPE_CHECKING
+from uuid import UUID
 
-from google.cloud import firestore
+from redis.asyncio import Redis
 
 from .model import InternalWheel
 
 if TYPE_CHECKING:
-    from uuid import UUID
-
-    from misfortune.config import FirestoreConfig
+    from misfortune.config import RepoConfig
     from misfortune.shared_model import Drink
+
+_logger = logging.getLogger(__name__)
 
 
 class Repository:
-    def __init__(self, config: FirestoreConfig) -> None:
-        self._config = config
-        self._client = firestore.AsyncClient()
+    def __init__(self, config: RepoConfig) -> None:
+        self._client = Redis(
+            host=config.host,
+            username=config.username,
+            password=config.password,
+            protocol=3,
+        )
+        self._prefix = f"{config.username}:api"
+
+    async def fetch_wheel(self, wheel_id: UUID, /) -> InternalWheel:
+        raw = await self._client.get(f"{self._prefix}:wheel:{wheel_id}")
+        if raw is None:
+            raise RuntimeError(f"Did not find wheel {wheel_id}")
+
+        wheel = InternalWheel.model_validate_json(raw)
+        return wheel
 
     async def fetch_wheels(self) -> list[InternalWheel]:
         client = self._client
 
+        wheel_ids = set()
+        async for key in client.scan_iter(match=f"{self._prefix}:wheel:*"):
+            wheel_ids.add(UUID(key))
+
         wheels = []
 
-        for doc in await client.collection(self._config.wheels).get():
-            doc_dict = doc.to_dict()
-            wheel = InternalWheel.model_validate(doc_dict)
-            wheels.append(wheel)
+        async with asyncio.TaskGroup() as tg:
+            for wheel_id in wheel_ids:
+                wheels.append(tg.create_task(self.fetch_wheel(wheel_id)))
 
-        return wheels
+        return [task.result() for task in wheels]
 
     async def create_wheel(self, wheel: InternalWheel) -> None:
-        await (
-            self._client.collection(self._config.wheels)
-            .document(str(wheel.id))
-            .create(wheel.model_dump(mode="json"))
+        await self._client.set(
+            f"{self._prefix}:wheel:{wheel.id}", wheel.model_dump_json()
         )
 
     async def update_wheel_name(self, wheel_id: UUID, /, *, name: str) -> None:
-        await (
-            self._client.collection(self._config.wheels)
-            .document(str(wheel_id))
-            .update(
-                dict(name=name),
-            )
+        old_wheel = await self.fetch_wheel(wheel_id)
+        new_wheel = InternalWheel.model_validate(
+            old_wheel.model_copy(update={"name": name})
         )
+        await self.create_wheel(new_wheel)
 
     async def update_wheel_drinks(
         self, wheel_id: UUID, /, *, drinks: list[Drink]
     ) -> None:
-        await (
-            self._client.collection(self._config.wheels)
-            .document(str(wheel_id))
-            .update(
-                dict(drinks=[d.model_dump(mode="json") for d in drinks]),
-            )
+        old_wheel = await self.fetch_wheel(wheel_id)
+        new_wheel = InternalWheel.model_validate(
+            old_wheel.model_copy(update={"drinks": drinks})
         )
+        await self.create_wheel(new_wheel)
 
     async def delete_wheel(self, wheel_id: UUID, /) -> None:
-        await (
-            self._client.collection(self._config.wheels)
-            .document(str(wheel_id))
-            .delete()
-        )
+        await self._client.delete(f"{self._prefix}:wheel:{wheel_id}")
 
     async def close(self) -> None:
-        self._client.close()
+        await self._client.aclose()

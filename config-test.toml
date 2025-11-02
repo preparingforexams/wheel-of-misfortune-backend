@@ -1,0 +1,14 @@
+internal-token = "placeholder"
+jwt-secret = "placeholder"
+telegram-bot-name = "localpheasntestbot"
+telegram-token = "placeholder"
+
+[nats]
+server-url = "placeholder"
+consumer-name = "placeholder"
+receiver-secret = "placeholder"
+receiver-url = "placeholder"
+stream-name = "placeholder"
+
+[repo]
+host = "localhost"

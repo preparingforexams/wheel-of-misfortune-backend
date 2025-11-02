@@ -23,10 +23,6 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
-      volumes:
-        - name: gcp
-          secret:
-            secretName: gcp
       containers:
         - name: api
           image: "{{ .Values.image }}:{{ .Values.appVersion }}"
@@ -42,8 +38,18 @@ spec:
             - mountPath: /secret
               name: gcp
           env:
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: /secret/gsa.json
+            - name: REPO__HOST
+              value: "redis.prep-redis-state"
+            - name: REPO__USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: username
+            - name: REPO__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: password
           envFrom:
             - secretRef:
                 name: tokens
