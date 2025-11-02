@@ -37,7 +37,7 @@ class Repository:
 
         wheel_ids = set()
         async for key in client.scan_iter(match=f"{self._prefix}:wheel:*"):
-            wheel_ids.add(UUID(key))
+            wheel_ids.add(UUID(key.split(":")[-1]))
 
         wheels = []
 
