@@ -699,7 +699,6 @@ def run():
     asyncio.set_event_loop(uvloop.new_event_loop())
     app.run_polling(
         stop_signals=[signal.SIGTERM, signal.SIGINT],
-        close_loop=False,
     )
 
 
