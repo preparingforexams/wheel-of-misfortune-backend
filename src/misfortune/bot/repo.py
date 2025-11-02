@@ -29,7 +29,7 @@ class Repository:
     async def load_user_states(self) -> dict[int, UserState]:
         user_ids = set()
         async for key in self._client.scan_iter(match=f"{self._prefix}:user_state:*"):
-            user_ids.add(int(key.split(":")[-1]))
+            user_ids.add(int(key.decode("utf-8").split(":")[-1]))
 
         result = {}
 
