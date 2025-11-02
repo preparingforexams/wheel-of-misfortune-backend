@@ -32,7 +32,7 @@ spec:
           image: "{{ .Values.image }}:{{ .Values.appVersion }}"
           args:
             - uvicorn
-            - misfortune.api:app
+            - misfortune.api.main:app
             - --host
             - 0.0.0.0
           ports:

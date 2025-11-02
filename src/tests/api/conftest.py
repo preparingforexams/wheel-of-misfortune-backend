@@ -37,7 +37,7 @@ def config() -> Config:
 @fixture()
 def client(config, mocker) -> TestClient:  # type: ignore
     mocker.patch("misfortune.config.init_config", return_value=config)
-    from misfortune.api import app
+    from misfortune.api.main import app
 
     client = TestClient(app, follow_redirects=False)
     yield client
@@ -52,7 +52,7 @@ def internal_auth(config) -> httpx.Auth:
 @fixture
 def spin_auth_factory() -> Callable[[], httpx.Auth]:
     def _generate() -> httpx.Auth:
-        from misfortune.api import observable_states
+        from misfortune.api.main import observable_states
 
         observable_state = observable_states[UUID(int=0)]
 

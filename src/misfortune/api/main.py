@@ -10,18 +10,19 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any, Self
 
 import jwt
-from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect, status
+from fastapi import Depends, FastAPI, Request, WebSocket, WebSocketDisconnect, status
 from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from google.cloud import firestore
 from pydantic import ValidationError
 from pydantic_core import Url
 
-from .config import init_config
-from .observable import Observable, observable
-from .shared_model import (
+from misfortune.api.model import InternalWheel
+from misfortune.api.repo import Repository
+from misfortune.config import init_config
+from misfortune.observable import Observable, observable
+from misfortune.shared_model import (
     Drink,
     MisfortuneModel,
     TelegramWheel,
@@ -32,22 +33,6 @@ from .shared_model import (
 _LOG = logging.getLogger(__name__)
 
 auth_token = HTTPBearer()
-
-
-class Wheel(MisfortuneModel):
-    id: uuid.UUID
-    name: str
-    owner: int
-    drinks: list[Drink]
-
-    @classmethod
-    def create(cls, owner: int, name: str) -> Self:
-        return cls(
-            name=name,
-            owner=owner,
-            id=uuid.uuid4(),
-            drinks=[],
-        )
 
 
 class WheelLogin(MisfortuneModel):
@@ -88,7 +73,7 @@ class State(MisfortuneModel):
     speed: float = 0.0
 
     @classmethod
-    def initial(cls, wheel: Wheel) -> Self:
+    def initial(cls, wheel: InternalWheel) -> Self:
         return cls(
             drinks=wheel.drinks,
             wheel_name=wheel.name,
@@ -116,23 +101,8 @@ def generate_code() -> str:
     return secrets.token_urlsafe(16)
 
 
-async def fetch_wheels(client: firestore.AsyncClient) -> list[Wheel]:
-    wheels = []
-
-    for doc in await client.collection(config.firestore.wheels).get():
-        doc_dict = doc.to_dict()
-        wheel = Wheel.model_validate(doc_dict)
-        wheels.append(wheel)
-
-    return wheels
-
-
-async def _client():
-    client = firestore.AsyncClient()
-    try:
-        yield client
-    finally:
-        client.close()
+async def _repo(request: Request) -> Repository:
+    return request.app.state.repo
 
 
 pending_wheel_clients: dict[uuid.UUID, Observable[uuid.UUID]] = {}
@@ -142,18 +112,17 @@ config = init_config()
 
 
 @asynccontextmanager
-async def lifespan(_):
-    client = firestore.AsyncClient()
+async def lifespan(fastapi_app: FastAPI):
+    repo = Repository(config.firestore)
     try:
-        wheels = await fetch_wheels(client)
+        fastapi_app.state.repo = repo
+        wheels = await repo.fetch_wheels()
         for wheel in wheels:
             observable_states[wheel.id] = observable(State.initial(wheel))
+
+        yield
     finally:
-        client.close()
-
-    yield
-
-    # We don't have any teardown to do
+        await repo.close()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -229,7 +198,7 @@ async def create_wheel(
     user_id: int,
     name: str,
     token: Annotated[HTTPAuthorizationCredentials, Depends(auth_token)],
-    client: Annotated[firestore.AsyncClient, Depends(_client)],
+    repo: Annotated[Repository, Depends(_repo)],
 ) -> TelegramWheel:
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
@@ -240,15 +209,11 @@ async def create_wheel(
     if owned_wheels >= config.max_user_wheels:
         raise HTTPException(status.HTTP_402_PAYMENT_REQUIRED)
 
-    wheel = Wheel.create(
+    wheel = InternalWheel.create(
         owner=user_id,
         name=name,
     )
-    await (
-        client.collection(config.firestore.wheels)
-        .document(str(wheel.id))
-        .create(wheel.model_dump(mode="json"))
-    )
+    await repo.create_wheel(wheel)
     observable_states[wheel.id] = observable(State.initial(wheel))
     return TelegramWheel(
         id=wheel.id,
@@ -283,19 +248,13 @@ async def update_wheel_name(
     wheel_id: uuid.UUID,
     name: str,
     token: Annotated[HTTPAuthorizationCredentials, Depends(auth_token)],
-    client: Annotated[firestore.AsyncClient, Depends(_client)],
+    repo: Annotated[Repository, Depends(_repo)],
 ) -> TelegramWheel:
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
 
     state = _verify_access(user=user_id, wheel=wheel_id, require_owner=True)
-    await (
-        client.collection(config.firestore.wheels)
-        .document(str(wheel_id))
-        .update(
-            dict(name=name),
-        )
-    )
+    await repo.update_wheel_name(wheel_id, name=name)
     await state.update(state.value.replace(wheel_name=name))
     return TelegramWheel(name=name, id=wheel_id, is_owned=True)
 
@@ -331,13 +290,13 @@ async def delete_wheel(
     user_id: int,
     wheel_id: uuid.UUID,
     token: Annotated[HTTPAuthorizationCredentials, Depends(auth_token)],
-    client: Annotated[firestore.AsyncClient, Depends(_client)],
+    repo: Annotated[Repository, Depends(_repo)],
 ) -> None:
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
 
     _verify_access(user=user_id, wheel=wheel_id, require_owner=True)
-    await client.collection(config.firestore.wheels).document(str(wheel_id)).delete()
+    await repo.delete_wheel(wheel_id)
     del observable_states[wheel_id]
 
 
@@ -408,7 +367,7 @@ async def add_drink(
     wheel_id: uuid.UUID,
     name: str,
     token: Annotated[HTTPAuthorizationCredentials, Depends(auth_token)],
-    client: Annotated[firestore.AsyncClient, Depends(_client)],
+    repo: Annotated[Repository, Depends(_repo)],
 ) -> None:
     if token.credentials != config.internal_token:
         raise HTTPException(status.HTTP_403_FORBIDDEN)
@@ -423,13 +382,7 @@ async def add_drink(
         if name not in (d.name for d in state.drinks):
             new_drinks = list(state.drinks)
             new_drinks.append(Drink.create(name))
-            await (
-                client.collection(config.firestore.wheels)
-                .document(str(wheel_id))
-                .update(
-                    dict(drinks=[d.model_dump(mode="json") for d in new_drinks]),
-                )
-            )
+            await repo.update_wheel_drinks(wheel_id, drinks=new_drinks)
             await atom.update(state.replace(drinks=new_drinks))
 
 
@@ -442,7 +395,7 @@ async def delete_drink(
     user_id: int,
     wheel_id: uuid.UUID,
     drink_id: uuid.UUID,
-    client: Annotated[firestore.AsyncClient, Depends(_client)],
+    repo: Annotated[Repository, Depends(_repo)],
     token: Annotated[HTTPAuthorizationCredentials, Depends(auth_token)],
 ) -> None:
     if token.credentials != config.internal_token:
@@ -453,13 +406,7 @@ async def delete_drink(
     async with observable_state.atomic() as atom:
         state = atom.value
         drinks = [drink for drink in state.drinks if drink.id != drink_id]
-        await (
-            client.collection(config.firestore.wheels)
-            .document(str(wheel_id))
-            .update(
-                dict(drinks=[d.model_dump(mode="json") for d in drinks]),
-            )
-        )
+        await repo.update_wheel_drinks(wheel_id, drinks=drinks)
         await atom.update(state.replace(drinks=drinks))
 
 

@@ -2,15 +2,13 @@ import asyncio
 import base64
 import logging
 import signal
-from typing import TYPE_CHECKING, Self, cast
+from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
 import httpx
 import uvloop
 from bs_nats_updater import create_updater
-from google.cloud import firestore
 from more_itertools import chunked
-from pydantic import ConfigDict
 from telegram import (
     Bot,
     InlineKeyboardButton,
@@ -33,10 +31,11 @@ from telegram.ext import (
     filters,
 )
 
-from misfortune.config import Config, FirestoreConfig, init_config
+from misfortune.bot.model import UserState
+from misfortune.bot.repo import Repository
+from misfortune.config import Config, init_config
 from misfortune.shared_model import (
     Drink,
-    MisfortuneModel,
     TelegramWheel,
     TelegramWheels,
     TelegramWheelState,
@@ -53,47 +52,33 @@ MESSAGE_ACTIVE_WHEEL_REQUIRED = (
 )
 
 
-class UserState(MisfortuneModel):
-    model_config = ConfigDict(frozen=False)
-
-    active_wheel: TelegramWheel | None
-    drinks_message: int | None
-    pending_registration_id: UUID | None
-
-    @classmethod
-    def create(cls) -> Self:
-        return cls(
-            active_wheel=None,
-            drinks_message=None,
-            pending_registration_id=None,
-        )
-
-
 class MisfortuneBot:
     def __init__(
         self,
-        bot: Bot,
         config: Config,
-        user_states: dict[int, UserState],
     ) -> None:
-        self.telegram = bot
+        self.telegram: Bot = None  # type: ignore[assignment]
         self._api = httpx.AsyncClient(
             base_url=config.api_url,
             headers=dict(Authorization=f"Bearer {config.internal_token}"),
         )
-        self._firestore_client = firestore.AsyncClient()
-        self._firestore = self._firestore_client.collection(
-            config.firestore.user_states
-        )
+        self._repo = Repository(config.firestore)
         self._max_wheels = config.max_user_wheels
         self._max_wheel_name_length = config.max_wheel_name_length
-        self._user_states = user_states
+        self._user_states: dict[int, UserState] = {}
+
+    async def initialize(self, app: Application) -> None:
+        self.telegram = app.bot
+        self._user_states = await self._repo.load_user_states()
+
+    async def close(self) -> None:
+        await self._repo.close()
 
     def _load_user_state(self, user_id: int) -> UserState:
         return self._user_states.get(user_id, UserState.create())
 
     async def _update_user_state(self, user_id: int, state: UserState) -> None:
-        await self._firestore.document(str(user_id)).set(state.model_dump(mode="json"))
+        await self._repo.update_user_state(user_id, state)
         self._user_states[user_id] = state
 
     @staticmethod
@@ -647,28 +632,18 @@ class MisfortuneBot:
         await self._refresh_drinks(user, state)
 
 
-def _load_user_states(config: FirestoreConfig) -> dict[int, UserState]:
-    client = firestore.Client()
-    try:
-        return {
-            int(doc.id): UserState.model_validate(doc.to_dict())
-            for doc in client.collection(config.user_states).stream()
-        }
-    finally:
-        client.close()
-
-
 def run():
     asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
     config = init_config()
+    bot = MisfortuneBot(config)
     app = (
         Application.builder()
         .updater(create_updater(config.telegram_token, config.nats))
+        .post_init(bot.initialize)
+        .post_shutdown(lambda _: bot.close())
         .build()
     )
-    user_states = _load_user_states(config.firestore)
-    bot = MisfortuneBot(app.bot, config, user_states)
 
     app.add_handler(
         CommandHandler(
