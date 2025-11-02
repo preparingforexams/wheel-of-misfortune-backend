@@ -42,7 +42,7 @@ def generate_code() -> str:
 
 
 async def _repo(request: Request) -> Repository:
-    return request.app.repo.repo
+    return request.app.state.repo
 
 
 pending_wheel_clients: dict[uuid.UUID, Observable[uuid.UUID]] = {}
