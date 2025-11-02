@@ -1,13 +1,11 @@
 import asyncio
-import base64
 import logging
 import random
 import secrets
 import uuid
-from collections.abc import Sequence
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
-from typing import Annotated, Any, Self
+from typing import Annotated, Any
 
 import jwt
 from fastapi import Depends, FastAPI, Request, WebSocket, WebSocketDisconnect, status
@@ -16,15 +14,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import ValidationError
-from pydantic_core import Url
 
-from misfortune.api.model import InternalWheel
+from misfortune.api.model import (
+    InternalWheel,
+    State,
+    WheelCredentials,
+    WheelLogin,
+    WheelRegistrationInfo,
+)
 from misfortune.api.repo import Repository
 from misfortune.config import init_config
 from misfortune.observable import Observable, observable
 from misfortune.shared_model import (
     Drink,
-    MisfortuneModel,
     TelegramWheel,
     TelegramWheels,
     TelegramWheelState,
@@ -35,74 +37,12 @@ _LOG = logging.getLogger(__name__)
 auth_token = HTTPBearer()
 
 
-class WheelLogin(MisfortuneModel):
-    token: str | None
-
-
-class WheelRegistrationInfo(MisfortuneModel):
-    registration_id: uuid.UUID
-    telegram_url: Url
-
-    @classmethod
-    def create(cls, registration_id: uuid.UUID) -> Self:
-        bot_name = config.telegram_bot_name
-        encoded_id = base64.urlsafe_b64encode(registration_id.bytes).decode()
-        return cls(
-            registration_id=registration_id,
-            telegram_url=Url.build(
-                scheme="https",
-                host="t.me",
-                path=f"/{bot_name}",
-                query=f"start={encoded_id}",
-            ),
-        )
-
-
-class WheelCredentials(MisfortuneModel):
-    token: str
-
-
-class State(MisfortuneModel):
-    drinks: Sequence[Drink]
-    wheel_name: str
-    code: str
-    owner: int
-    drinking_age: datetime | None = None
-    is_locked: bool = False
-    current_drink: int = 0
-    speed: float = 0.0
-
-    @classmethod
-    def initial(cls, wheel: InternalWheel) -> Self:
-        return cls(
-            drinks=wheel.drinks,
-            wheel_name=wheel.name,
-            code=generate_code(),
-            owner=wheel.owner,
-        )
-
-    def is_accessible(self, user_id: int) -> bool:
-        return user_id == self.owner
-
-    def is_old(self) -> bool:
-        drinking_age = self.drinking_age
-        if drinking_age is None:
-            return True
-
-        now = datetime.now(tz=UTC)
-        delta = now - drinking_age
-        return delta > timedelta(minutes=1)
-
-    def replace(self, **kwargs) -> Self:
-        return self.model_validate(self.model_copy(update=kwargs))
-
-
 def generate_code() -> str:
     return secrets.token_urlsafe(16)
 
 
 async def _repo(request: Request) -> Repository:
-    return request.app.state.repo
+    return request.app.repo.repo
 
 
 pending_wheel_clients: dict[uuid.UUID, Observable[uuid.UUID]] = {}
@@ -113,12 +53,14 @@ config = init_config()
 
 @asynccontextmanager
 async def lifespan(fastapi_app: FastAPI):
-    repo = Repository(config.firestore)
+    repo = Repository(config.repo)
     try:
         fastapi_app.state.repo = repo
         wheels = await repo.fetch_wheels()
         for wheel in wheels:
-            observable_states[wheel.id] = observable(State.initial(wheel))
+            observable_states[wheel.id] = observable(
+                State.initial(wheel=wheel, code=generate_code())
+            )
 
         yield
     finally:
@@ -214,7 +156,9 @@ async def create_wheel(
         name=name,
     )
     await repo.create_wheel(wheel)
-    observable_states[wheel.id] = observable(State.initial(wheel))
+    observable_states[wheel.id] = observable(
+        State.initial(wheel=wheel, code=generate_code())
+    )
     return TelegramWheel(
         id=wheel.id,
         name=wheel.name,
@@ -433,7 +377,9 @@ async def register_wheel_client(websocket: WebSocket) -> uuid.UUID:
 
     try:
         await websocket.send_text(
-            WheelRegistrationInfo.create(registration_id).model_dump_json(),
+            WheelRegistrationInfo.create(
+                bot_name=config.telegram_bot_name, registration_id=registration_id
+            ).model_dump_json(),
         )
         await asyncio.wait_for(
             confirmation.wait(),

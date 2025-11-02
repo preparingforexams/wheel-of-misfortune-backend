@@ -20,9 +20,6 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       volumes:
-        - name: gcp
-          secret:
-            secretName: gcp
         - name: signaling
           emptyDir:
             sizeLimit: 1Mi
@@ -34,10 +31,20 @@ spec:
           env:
             - name: API_URL
               value: http://api
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: /secret/gsa.json
             - name: RUN_SIGNAL_FILE
               value: /var/run/bot/is-running
+            - name: REPO__HOST
+              value: "redis.prep-redis-state"
+            - name: REPO__USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: username
+            - name: REPO__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: password
           envFrom:
             - secretRef:
                 name: tokens
@@ -48,8 +55,6 @@ spec:
             limits:
               cpu: 200m
           volumeMounts:
-            - mountPath: /secret
-              name: gcp
             - mountPath: /var/run/bot
               name: signaling
           securityContext:

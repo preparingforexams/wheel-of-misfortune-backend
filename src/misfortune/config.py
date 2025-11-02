@@ -8,30 +8,25 @@ from bs_config import Env
 from bs_nats_updater import NatsConfig
 
 
-@dataclass
-class FirestoreConfig:
-    user_states: str
-    wheels: str
+@dataclass(frozen=True, kw_only=True)
+class RepoConfig:
+    host: str
+    username: str | None
+    password: str | None
 
     @classmethod
     def from_env(cls, env: Env) -> Self:
         return cls(
-            user_states=env.get_string(
-                "user-states-collection",
-                default="active_user_wheel",
-            ),
-            wheels=env.get_string(
-                "wheels-collection",
-                default="wheels",
-            ),
+            host=env.get_string("host", required=True),
+            username=env.get_string("username"),
+            password=env.get_string("password"),
         )
 
 
-@dataclass
+@dataclass(frozen=True, kw_only=True)
 class Config:
     api_url: str
     app_version: str
-    firestore: FirestoreConfig
     internal_token: str
     jwt_secret: str
     max_user_wheels: int
@@ -39,6 +34,7 @@ class Config:
     nats: NatsConfig
     run_signal_file: Path | None
     sentry_dsn: str | None
+    repo: RepoConfig
     telegram_token: str
     telegram_bot_name: str
 
@@ -47,7 +43,6 @@ class Config:
         return cls(
             api_url=env.get_string("api-url", default="https://api.bembel.party"),
             app_version=env.get_string("app-version", default="dev"),
-            firestore=FirestoreConfig.from_env(env / "firestore"),
             internal_token=env.get_string("internal-token", required=True),
             jwt_secret=env.get_string("jwt-secret", required=True),
             max_user_wheels=env.get_int("max-user-wheels", default=5),
@@ -55,6 +50,7 @@ class Config:
             nats=NatsConfig.from_env(env / "nats"),
             run_signal_file=env.get_string("run-signal-file", transform=Path),
             sentry_dsn=env.get_string("sentry-dsn"),
+            repo=RepoConfig.from_env(env / "repo"),
             telegram_bot_name=env.get_string(
                 "telegram-bot-name",
                 default="misfortune_bot",

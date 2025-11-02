@@ -26,9 +26,6 @@ jobs:
     with:
       build-tool: uv
       python-version: '3.14'
-    secrets:
-      ENVIRONMENT_VARIABLES: |
-        GSA_JSON=${{ secrets.TEST_GSA_JSON_B64 }}
 
   build-container-image:
     needs:
