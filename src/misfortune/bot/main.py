@@ -55,21 +55,20 @@ MESSAGE_ACTIVE_WHEEL_REQUIRED = (
 class MisfortuneBot:
     def __init__(
         self,
+        telegram_bot: Bot,
         config: Config,
+        repo: Repository,
+        user_states: dict[int, UserState],
     ) -> None:
-        self.telegram: Bot = None  # type: ignore[assignment]
+        self.telegram = telegram_bot
         self._api = httpx.AsyncClient(
             base_url=config.api_url,
             headers=dict(Authorization=f"Bearer {config.internal_token}"),
         )
-        self._repo = Repository(config.firestore)
+        self._repo = repo
         self._max_wheels = config.max_user_wheels
         self._max_wheel_name_length = config.max_wheel_name_length
-        self._user_states: dict[int, UserState] = {}
-
-    async def initialize(self, app: Application) -> None:
-        self.telegram = app.bot
-        self._user_states = await self._repo.load_user_states()
+        self._user_states = user_states
 
     async def close(self) -> None:
         await self._repo.close()
@@ -634,72 +633,87 @@ class MisfortuneBot:
 
 def run():
     config = init_config()
-    bot = MisfortuneBot(config)
+    repo = Repository(config.firestore)
     app = (
         Application.builder()
         .updater(create_updater(config.telegram_token, config.nats))
-        .post_init(bot.initialize)
-        .post_shutdown(lambda _: bot.close())
         .build()
     )
 
-    app.add_handler(
-        CommandHandler(
-            "start",
-            bot.start,
-            filters=~filters.UpdateType.EDITED_MESSAGE,
-        )
-    )
-    app.add_handler(
-        CommandHandler(
-            ["list", "drinks"],
-            bot.list_drinks,
-            filters=~filters.UpdateType.EDITED_MESSAGE,
-        )
-    )
-    app.add_handler(
-        CommandHandler(
-            "switch",
-            bot.switch_wheel,
-            filters=~filters.UpdateType.EDITED_MESSAGE,
-        )
-    )
-    app.add_handler(
-        CommandHandler(
-            "create",
-            bot.create_wheel,
-            filters=~filters.UpdateType.EDITED_MESSAGE,
-        )
-    )
-    app.add_handler(
-        CommandHandler(
-            "rename",
-            bot.rename_wheel,
-            filters=~filters.UpdateType.EDITED_MESSAGE,
-        )
-    )
-    app.add_handler(
-        CommandHandler(
-            "delete",
-            bot.delete_wheel,
-            filters=~filters.UpdateType.EDITED_MESSAGE,
-        )
-    )
-    app.add_handler(
-        CommandHandler(
-            "help",
-            bot.help,
-            filters=~filters.UpdateType.EDITED_MESSAGE,
-        )
-    )
-    app.add_handler(CallbackQueryHandler(bot.on_callback))
-    app.add_handler(MessageHandler(filters.TEXT, bot.on_message))
+    with asyncio.Runner(loop_factory=uvloop.new_event_loop) as runner:
+        user_states = runner.run(repo.load_user_states())
+        bot = MisfortuneBot(app.bot, config, repo, user_states)
 
-    _LOG.info("Running")
-    asyncio.set_event_loop(uvloop.new_event_loop())
-    app.run_polling(
-        stop_signals=[signal.SIGTERM, signal.SIGINT],
-    )
+        app.add_handler(
+            CommandHandler(
+                "start",
+                bot.start,
+                filters=~filters.UpdateType.EDITED_MESSAGE,
+            )
+        )
+        app.add_handler(
+            CommandHandler(
+                ["list", "drinks"],
+                bot.list_drinks,
+                filters=~filters.UpdateType.EDITED_MESSAGE,
+            )
+        )
+        app.add_handler(
+            CommandHandler(
+                "switch",
+                bot.switch_wheel,
+                filters=~filters.UpdateType.EDITED_MESSAGE,
+            )
+        )
+        app.add_handler(
+            CommandHandler(
+                "create",
+                bot.create_wheel,
+                filters=~filters.UpdateType.EDITED_MESSAGE,
+            )
+        )
+        app.add_handler(
+            CommandHandler(
+                "rename",
+                bot.rename_wheel,
+                filters=~filters.UpdateType.EDITED_MESSAGE,
+            )
+        )
+        app.add_handler(
+            CommandHandler(
+                "delete",
+                bot.delete_wheel,
+                filters=~filters.UpdateType.EDITED_MESSAGE,
+            )
+        )
+        app.add_handler(
+            CommandHandler(
+                "help",
+                bot.help,
+                filters=~filters.UpdateType.EDITED_MESSAGE,
+            )
+        )
+        app.add_handler(CallbackQueryHandler(bot.on_callback))
+        app.add_handler(MessageHandler(filters.TEXT, bot.on_message))
+
+        def _exit(sig: signal.Signals) -> None:
+            _LOG.info("Received exit signal %s", sig.name)
+            raise SystemExit
+
+        async def _run() -> None:
+            loop = asyncio.get_event_loop()
+            for sig in [signal.SIGTERM, signal.SIGINT]:
+                loop.add_signal_handler(sig, _exit, sig)
+
+            async with app:
+                await app.start()
+                await app.updater.start_polling()
+                await app.updater.stop()
+                await app.stop()
+                await bot.close()
+
+        _LOG.info("Running")
+        runner.run(_run())
 
 
 if __name__ == "__main__":
