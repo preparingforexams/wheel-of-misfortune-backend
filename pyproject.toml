@@ -28,7 +28,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "mypy ==1.18.*",
-    "pytest >=9, <10",
+    "pytest ==9.0.*",
     "pytest-mock >=3, <4",
     "ruff ==0.14.4",
 ]
@@ -47,17 +47,16 @@ bs-state = { index = "internal" }
 requires = ["uv_build==0.9.*"]
 build-backend = "uv_build"
 
-[tool.pytest.ini_options]
-filterwarnings = [
-    "error",
-]
+[tool.pytest]
+strict = true
 addopts = [
     "--import-mode=importlib",
 ]
-
+filterwarnings = [
+    "error",
+]
 log_cli = true
 log_cli_level = "info"
-xfail_strict = true
 
 [tool.mypy]
 plugins = ["pydantic.mypy"]
