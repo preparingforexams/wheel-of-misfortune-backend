@@ -1,6 +1,6 @@
 services:
   redis:
-    image: public.ecr.aws/docker/library/redis:8.2
+    image: public.ecr.aws/docker/library/redis:8.4
     user: redis
     ports:
       - "6379:6379"
