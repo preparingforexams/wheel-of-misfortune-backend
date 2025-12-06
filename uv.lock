@@ -272,7 +272,7 @@ dev = [
 requires-dist = [
     { name = "bs-config", extras = ["dotenv"], specifier = "==3.4.0", index = "https://pypi.bjoernpetersen.net/simple" },
     { name = "bs-nats-updater", specifier = "==3.0.0", index = "https://pypi.bjoernpetersen.net/simple" },
-    { name = "fastapi", specifier = "==0.123.*" },
+    { name = "fastapi", specifier = "==0.123.10" },
     { name = "httpx" },
     { name = "more-itertools", specifier = ">=10,<11" },
     { name = "pydantic", specifier = ">=2,<3" },
