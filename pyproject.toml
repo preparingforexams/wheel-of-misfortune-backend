@@ -12,7 +12,7 @@ classifiers = [
 dependencies = [
     "bs-config [dotenv] ==3.4.0",
     "bs-nats-updater ==3.0.0",
-    "fastapi ==0.124.4",
+    "fastapi ==0.127.1",
     "httpx",
     "more-itertools >=10, <11",
     "pydantic >=2, <3",
