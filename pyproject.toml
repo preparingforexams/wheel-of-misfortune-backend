@@ -21,7 +21,7 @@ dependencies = [
     "redis[hiredis]==7.1.0",
     "sentry-sdk >=2, <3",
     "uvicorn[standard] ==0.40.*",
-    "websockets ==15.0.1",
+    "websockets ==16.0",
     "uvloop ==0.22.*",
 ]
 
