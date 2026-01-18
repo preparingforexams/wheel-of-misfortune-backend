@@ -10,8 +10,8 @@ classifiers = [
 ]
 
 dependencies = [
-    "bs-config [dotenv] ==3.4.0",
-    "bs-nats-updater ==3.0.0",
+    "bs-config [dotenv] ==4.0.0",
+    "bs-nats-updater ==4.0.0",
     "fastapi ==0.128.0",
     "httpx",
     "more-itertools >=10, <11",
@@ -35,7 +35,7 @@ dev = [
 
 [[tool.uv.index]]
 name = "internal"
-url = "https://pypi.bjoernpetersen.net/simple"
+url = "https://code.bjoernpetersen.net/api/packages/BjoernPetersen/pypi/simple"
 explicit = true
 
 [tool.uv.sources]
